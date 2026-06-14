@@ -3,6 +3,8 @@
 package views
 
 import (
+	"html/template"
+
 	"github.com/a-h/templ"
 
 	"github.com/Olian04/simple-admin/internal/domain/resource"
@@ -76,15 +78,16 @@ type ErrorView struct {
 
 // FormFieldView is one input in a create/edit form.
 type FormFieldView struct {
-	Name      string
-	Label     string
-	Kind      string // string|number|integer|boolean|enum|array|object
-	InputType string // HTML input type for text-ish kinds
-	Value     string
-	Checked   bool // for boolean
-	Enum      []string
-	Required  bool
-	Error     string
+	Name       string
+	Label      string
+	Kind       string // string|number|integer|boolean|enum|array|object
+	InputType  string // HTML input type for text-ish kinds
+	Value      string
+	Checked    bool // for boolean
+	Enum       []string
+	Required   bool
+	Error      string
+	CustomHTML template.HTML // pre-rendered custom widget; when set, overrides the kind switch
 }
 
 // CredBackend describes a backend's auth requirement on the credentials page.

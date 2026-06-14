@@ -1,0 +1,9 @@
+﻿feat(ui): custom field widgets + built-in islands
+
+Widget registry (embedded built-ins + user template_files), JSONPath/static
+arg resolution (ohler55/ojg), and convention auto-select (date/time->datetime,
+{resource}(Id)->relation). datetime + relation widgets real (relation island
+fetches options via /options JSON endpoint, injects passthrough credential);
+21 other widgets stubbed. @templ.Raw dispatch in the form. Unit tested.
+
+Verified vs PocketBase: code/datetime/rating/relation render; options JSON.

@@ -10,8 +10,10 @@ tool (
 
 require (
 	github.com/a-h/templ v0.3.1020
+	github.com/ohler55/ojg v1.28.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.66.1
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/urfave/cli/v3 v3.8.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -172,7 +174,6 @@ require (
 	github.com/ryancurrah/gomodguard v1.4.1 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.6.0 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.29.0 // indirect
 	github.com/securego/gosec/v2 v2.26.1 // indirect

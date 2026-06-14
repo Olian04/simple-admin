@@ -16,7 +16,7 @@ Status: `todo` · `in_progress` · `blocked` · `done`. Update date on every cha
 | 9 | Forms + write + validation | done | validator + form templ/handlers + 422 re-render; create/update verified vs PocketBase | 2026-06-14 |
 | 10 | Delete | done | confirm modal + DELETE route + CSP-safe modal-close js; verified vs PocketBase | 2026-06-14 |
 | 11 | Credentials + apikey passthrough | done | credentials.js + middleware + page; passthrough verified vs gated PocketBase | 2026-06-14 |
-| 12 | Custom fields + built-in islands | todo | | 2026-06-14 |
+| 12 | Custom fields + built-in islands | done | widget registry + args(jsonpath) + auto-select + relation island/options + stubs; verified | 2026-06-14 |
 | 13 | Polish (CSP, docs, README mermaid) | todo | | 2026-06-14 |
 
-Current focus: **Step 12**.
+Current focus: **Step 13**.

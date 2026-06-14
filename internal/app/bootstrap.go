@@ -30,8 +30,13 @@ func Run(ctx context.Context, cfg config.Config, configDir string) error {
 		return fmt.Errorf("build resources: %w", err)
 	}
 
+	widgets, err := buildWidgets(cfg, configDir)
+	if err != nil {
+		return fmt.Errorf("build widgets: %w", err)
+	}
+
 	svc := echo.NewService()
-	handler := httptransport.Router(svc, registry, resources)
+	handler := httptransport.Router(svc, registry, resources, widgets)
 
 	n := 1
 	metricsOn := cfg.MetricsEnabled()

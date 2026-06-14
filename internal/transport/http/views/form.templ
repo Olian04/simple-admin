@@ -34,7 +34,10 @@ templ FormBody(vm FormView) {
 			<div class="field">
 				<label class="label">{ f.Label }</label>
 				<div class="control">
-					switch f.Kind {
+					if f.CustomHTML != "" {
+						@templ.Raw(string(f.CustomHTML))
+					} else {
+						switch f.Kind {
 						case "boolean":
 							<label class="checkbox">
 								<input type="checkbox" name={ f.Name } value="true" checked?={ f.Checked }/>
@@ -65,6 +68,7 @@ templ FormBody(vm FormView) {
 									required
 								}
 							/>
+						}
 					}
 				</div>
 				if f.Error != "" {

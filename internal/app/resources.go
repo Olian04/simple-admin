@@ -8,6 +8,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/source/manual"
 	"github.com/Olian04/simple-admin/internal/source/openapi"
+	"github.com/Olian04/simple-admin/internal/ui/render"
 	"github.com/Olian04/simple-admin/internal/upstream"
 	"github.com/Olian04/simple-admin/internal/validation"
 )
@@ -47,4 +48,23 @@ func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*r
 	reg := resource.NewRegistry()
 	reg.Replace(runtimes)
 	return reg, nil
+}
+
+// buildWidgets builds the field-widget registry: embedded built-ins plus any
+// user-supplied template_file widgets referenced in config (resolved against
+// configDir). Fails fast on parse errors.
+func buildWidgets(cfg config.Config, configDir string) (*render.Registry, error) {
+	var userFiles []string
+	seen := map[string]bool{}
+	for _, b := range cfg.Backends {
+		for _, r := range b.Resources {
+			for _, ft := range r.FieldTemplates {
+				if ft.TemplateFile != "" && !seen[ft.TemplateFile] {
+					seen[ft.TemplateFile] = true
+					userFiles = append(userFiles, ft.TemplateFile)
+				}
+			}
+		}
+	}
+	return render.NewRegistry(configDir, userFiles)
 }

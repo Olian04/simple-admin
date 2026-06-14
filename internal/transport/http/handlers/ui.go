@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -15,10 +16,11 @@ import (
 // UIHandler renders the admin UI screens from the resource registry.
 type UIHandler struct {
 	registry *resource.Registry
+	widgets  *render.Registry
 }
 
-func NewUIHandler(registry *resource.Registry) *UIHandler {
-	return &UIHandler{registry: registry}
+func NewUIHandler(registry *resource.Registry, widgets *render.Registry) *UIHandler {
+	return &UIHandler{registry: registry, widgets: widgets}
 }
 
 // Index redirects to the first resource, or renders the placeholder shell when
@@ -99,6 +101,46 @@ func (h *UIHandler) Credentials(w http.ResponseWriter, r *http.Request) {
 	}
 	data := h.pageData("", "", views.Credentials(views.CredentialsView{Backends: bs}))
 	h.render(w, r, views.Page(data))
+}
+
+// Options returns a JSON [{value,label}] list for relation pickers.
+func (h *UIHandler) Options(w http.ResponseWriter, r *http.Request) {
+	rt, ok := h.lookup(w, r)
+	if !ok {
+		return
+	}
+	res, err := rt.Service.List(r.Context(), resource.ListParams{PerPage: 200})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	labelField := firstStringField(rt.Descriptor)
+	out := make([]map[string]string, 0, len(res.Items))
+	for _, rec := range res.Items {
+		id := render.DisplayValue(rec[rt.Descriptor.IDField])
+		label := id
+		if labelField != "" {
+			if v := render.DisplayValue(rec[labelField]); v != "" {
+				label = v
+			}
+		}
+		out = append(out, map[string]string{"value": id, "label": label})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(out)
+}
+
+// firstStringField returns a sensible label field for relation options.
+func firstStringField(d resource.ResourceDescriptor) string {
+	for _, f := range d.Schema.Fields {
+		if f.Name == d.IDField || f.ReadOnly {
+			continue
+		}
+		if f.Kind == resource.KindString && f.Format == "" {
+			return f.Name
+		}
+	}
+	return ""
 }
 
 // handleReadError maps upstream read errors to friendly pages.

@@ -10,11 +10,12 @@ import (
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	"github.com/Olian04/simple-admin/internal/transport/http/handlers"
+	"github.com/Olian04/simple-admin/internal/ui/render"
 	"github.com/Olian04/simple-admin/internal/upstream"
 	"github.com/Olian04/simple-admin/web"
 )
 
-func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Registry) stdhttp.Handler {
+func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Registry, widgets *render.Registry) stdhttp.Handler {
 	mux := stdhttp.NewServeMux()
 	echoHandler := handlers.NewEchoHandler(svc)
 	mux.Handle("GET /healthz", stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
@@ -27,12 +28,13 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	mux.Handle("GET /static/", stdhttp.StripPrefix("/static/", stdhttp.FileServerFS(staticFS)))
 
 	// Admin UI.
-	ui := handlers.NewUIHandler(resources)
+	ui := handlers.NewUIHandler(resources, widgets)
 	mux.Handle("GET /ui", stdhttp.HandlerFunc(ui.Index))
 	mux.Handle("GET /ui/credentials", stdhttp.HandlerFunc(ui.Credentials))
 	mux.Handle("GET /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.List))
 	mux.Handle("POST /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.Create))
 	mux.Handle("GET /ui/{backend}/{name}/new", stdhttp.HandlerFunc(ui.NewForm))
+	mux.Handle("GET /ui/{backend}/{name}/options", stdhttp.HandlerFunc(ui.Options))
 	mux.Handle("GET /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Detail))
 	mux.Handle("GET /ui/{backend}/{name}/{id}/edit", stdhttp.HandlerFunc(ui.EditForm))
 	mux.Handle("PUT /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Update))

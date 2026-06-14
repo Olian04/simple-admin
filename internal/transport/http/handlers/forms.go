@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ func (h *UIHandler) NewForm(w http.ResponseWriter, r *http.Request) {
 		h.renderStatus(w, r, http.StatusNotFound, rt.Descriptor, "Not allowed", "Create is not supported for this resource")
 		return
 	}
-	vm := buildFormView(rt.Descriptor, "create", "", nil, nil)
+	vm := h.buildFormView(rt.Descriptor, "create", "", nil, nil)
 	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, views.Form(vm))
 	h.render(w, r, views.Page(data))
 }
@@ -49,7 +50,7 @@ func (h *UIHandler) EditForm(w http.ResponseWriter, r *http.Request) {
 		h.renderError(w, r, rt.Descriptor, "Failed to load record", err)
 		return
 	}
-	vm := buildFormView(rt.Descriptor, "edit", id, rec, nil)
+	vm := h.buildFormView(rt.Descriptor, "edit", id, rec, nil)
 	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, views.Form(vm))
 	h.render(w, r, views.Page(data))
 }
@@ -98,7 +99,7 @@ func (h *UIHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *UIHandler) handleWriteError(w http.ResponseWriter, r *http.Request, d resource.ResourceDescriptor, mode, id string, rec resource.Record, err error) {
 	var verr *resource.ValidationError
 	if errors.As(err, &verr) {
-		vm := buildFormView(d, mode, id, rec, verr.Fields)
+		vm := h.buildFormView(d, mode, id, rec, verr.Fields)
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		h.render(w, r, views.FormBody(vm))
 		return
@@ -107,7 +108,7 @@ func (h *UIHandler) handleWriteError(w http.ResponseWriter, r *http.Request, d r
 }
 
 func (h *UIHandler) formError(w http.ResponseWriter, r *http.Request, d resource.ResourceDescriptor, mode, id string, rec resource.Record, err error) {
-	vm := buildFormView(d, mode, id, rec, nil)
+	vm := h.buildFormView(d, mode, id, rec, nil)
 	vm.FormError = err.Error()
 	w.WriteHeader(http.StatusBadGateway)
 	h.render(w, r, views.FormBody(vm))
@@ -168,7 +169,8 @@ func parseForm(r *http.Request, d resource.ResourceDescriptor) (resource.Record,
 	return rec, nil
 }
 
-func buildFormView(d resource.ResourceDescriptor, mode, id string, data resource.Record, errs map[string]string) views.FormView {
+func (h *UIHandler) buildFormView(d resource.ResourceDescriptor, mode, id string, data resource.Record, errs map[string]string) views.FormView {
+	known := h.resourceNames(d.Backend.ID)
 	ff := render.FormFields(d.Schema.Fields, data, errs)
 	fields := make([]views.FormFieldView, 0, len(ff))
 	for _, f := range ff {
@@ -185,6 +187,9 @@ func buildFormView(d resource.ResourceDescriptor, mode, id string, data resource
 			fv.Checked = isTruthy(f.Value)
 		} else {
 			fv.Value = render.ValueString(f.Value)
+		}
+		if html, ok := h.renderWidget(d, f, data, known); ok {
+			fv.CustomHTML = html
 		}
 		fields = append(fields, fv)
 	}
@@ -247,6 +252,89 @@ func (h *UIHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("HX-Redirect", "/ui/"+d.Backend.ID+"/"+d.Name)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UIHandler) resourceNames(backendID string) []string {
+	rts := h.registry.ResourcesFor(backendID)
+	names := make([]string, 0, len(rts))
+	for _, rt := range rts {
+		names = append(names, rt.Descriptor.Name)
+	}
+	return names
+}
+
+// renderWidget resolves a field's custom widget (explicit config or convention
+// auto-select) and renders it to HTML. Returns ok=false to fall back to the
+// built-in input.
+func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f render.FormField, data resource.Record, known []string) (template.HTML, bool) {
+	if h.widgets == nil {
+		return "", false
+	}
+	var widgetID, optionsURL string
+	var args map[string]any
+
+	if f.Custom != nil {
+		if f.Custom.TemplateFile != "" {
+			widgetID = f.Custom.TemplateFile
+		} else {
+			widgetID = f.Custom.TemplateID
+		}
+		args = render.ResolveArgs(f.Custom.Args, data)
+	} else if id, target, ok := render.AutoSelectWidget(f.Field, known); ok {
+		widgetID = id
+		if id == "relation" && target != "" {
+			optionsURL = "/ui/" + d.Backend.ID + "/" + target + "/options"
+		}
+	}
+
+	if widgetID == "" || !h.widgets.Has(widgetID) {
+		return "", false
+	}
+
+	switch widgetID {
+	case "relation":
+		if optionsURL == "" {
+			if res, _ := args["resource"].(string); res != "" {
+				optionsURL = "/ui/" + d.Backend.ID + "/" + res + "/options"
+			}
+		}
+	case "datetime":
+		if args == nil {
+			args = map[string]any{}
+		}
+		if _, ok := args["type"]; !ok {
+			mode, _ := args["mode"].(string)
+			if mode == "" {
+				mode = modeFromFormat(f.Format)
+			}
+			args["type"] = render.DatetimeInputType(mode)
+		}
+	}
+
+	html, err := h.widgets.Render(widgetID, render.FieldContext{
+		Name:       f.Name,
+		Label:      f.Label,
+		InputID:    "f_" + f.Name,
+		Value:      render.ValueString(f.Value),
+		Required:   f.Required,
+		Args:       args,
+		OptionsURL: optionsURL,
+	})
+	if err != nil {
+		return "", false
+	}
+	return html, true
+}
+
+func modeFromFormat(format string) string {
+	switch format {
+	case "date":
+		return "date"
+	case "time":
+		return "time"
+	default:
+		return "datetime"
+	}
 }
 
 func isTruthy(v any) bool {

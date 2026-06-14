@@ -1,0 +1,8 @@
+<input
+  class="input"
+  type="{{ .Arg "type" "datetime-local" }}"
+  name="{{ .Name }}"
+  id="{{ .InputID }}"
+  value="{{ .Value }}"
+  {{ if .Required }}required{{ end }}
+/>
