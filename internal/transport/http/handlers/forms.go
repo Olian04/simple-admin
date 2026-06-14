@@ -12,7 +12,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/transport/http/views"
 	"github.com/Olian04/simple-admin/internal/ui/render"
-	"github.com/Olian04/simple-admin/internal/upstream"
+	"github.com/Olian04/simple-admin/internal/backend"
 )
 
 // NewForm renders an empty create form.
@@ -42,7 +42,7 @@ func (h *UIHandler) EditForm(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	rec, err := rt.Service.Get(r.Context(), id)
-	if errors.Is(err, upstream.ErrNotFound) {
+	if errors.Is(err, backend.ErrNotFound) {
 		h.renderStatus(w, r, http.StatusNotFound, rt.Descriptor, "Not found", "No "+rt.Descriptor.Label+" with id "+id)
 		return
 	}

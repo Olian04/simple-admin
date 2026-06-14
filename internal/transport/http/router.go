@@ -9,8 +9,8 @@ import (
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	"github.com/Olian04/simple-admin/internal/transport/http/handlers"
+	"github.com/Olian04/simple-admin/internal/backend"
 	"github.com/Olian04/simple-admin/internal/ui/render"
-	"github.com/Olian04/simple-admin/internal/upstream"
 	"github.com/Olian04/simple-admin/web"
 )
 
@@ -68,7 +68,7 @@ func securityHeaders(next stdhttp.Handler) stdhttp.Handler {
 func withCredentials(next stdhttp.Handler) stdhttp.Handler {
 	return stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 		if cred := r.Header.Get("X-Sa-Credential"); cred != "" {
-			r = r.WithContext(upstream.WithCredential(r.Context(), cred))
+			r = r.WithContext(backend.WithCredential(r.Context(), cred))
 		}
 		next.ServeHTTP(w, r)
 	})

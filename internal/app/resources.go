@@ -9,7 +9,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/source/manual"
 	"github.com/Olian04/simple-admin/internal/source/openapi"
 	"github.com/Olian04/simple-admin/internal/ui/render"
-	"github.com/Olian04/simple-admin/internal/upstream"
+	"github.com/Olian04/simple-admin/internal/backend"
 	"github.com/Olian04/simple-admin/internal/validation"
 )
 
@@ -17,7 +17,7 @@ import (
 // populated registry. configDir resolves relative manual schema paths. It fails
 // fast if any configured source cannot load.
 //
-// Each descriptor becomes a live Runtime: an upstream.Client (Store) plus the
+// Each descriptor becomes a live Runtime: a backend.Client (Store) plus the
 // descriptor's Service. The Validator is wired in a later step.
 func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*resource.Registry, error) {
 	sources := []resource.DescriptorSource{
@@ -41,7 +41,7 @@ func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*r
 		if err != nil {
 			return nil, fmt.Errorf("backend %q resource %q schema: %w", d.Backend.ID, d.Name, err)
 		}
-		svc := &resource.Service{Descriptor: d, Store: upstream.New(d), Validator: validator}
+		svc := &resource.Service{Descriptor: d, Store: backend.New(d), Validator: validator}
 		runtimes = append(runtimes, &resource.Runtime{Descriptor: d, Service: svc})
 	}
 

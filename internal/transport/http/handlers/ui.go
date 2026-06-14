@@ -10,7 +10,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/transport/http/views"
 	"github.com/Olian04/simple-admin/internal/ui/render"
-	"github.com/Olian04/simple-admin/internal/upstream"
+	"github.com/Olian04/simple-admin/internal/backend"
 )
 
 // UIHandler renders the admin UI screens from the resource registry.
@@ -146,10 +146,10 @@ func firstStringField(d resource.ResourceDescriptor) string {
 // handleReadError maps upstream read errors to friendly pages.
 func (h *UIHandler) handleReadError(w http.ResponseWriter, r *http.Request, d resource.ResourceDescriptor, err error) {
 	switch {
-	case errors.Is(err, upstream.ErrUnauthorized):
+	case errors.Is(err, backend.ErrUnauthorized):
 		h.renderStatus(w, r, http.StatusUnauthorized, d, "Credential required",
 			"The backend rejected the request. Set or update this backend's credential on the Credentials page (in the sidebar).")
-	case errors.Is(err, upstream.ErrNotFound):
+	case errors.Is(err, backend.ErrNotFound):
 		h.renderStatus(w, r, http.StatusNotFound, d, "Not found", "Record not found.")
 	default:
 		h.renderError(w, r, d, "Upstream error", err)

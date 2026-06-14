@@ -1,7 +1,7 @@
-// Package upstream is the outbound CRUD client: it maps resource operations to
+// Package backend is the outbound CRUD client: it maps resource operations to
 // HTTP calls against the backend, injecting passthrough credentials per the
 // resource's auth scheme. It implements resource.Store.
-package upstream
+package backend
 
 import (
 	"bytes"
@@ -155,7 +155,7 @@ func (c *Client) do(ctx context.Context, method, u string, payload any) ([]byte,
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return nil, ErrUnauthorized
 	default:
-		return nil, &UpstreamError{Status: resp.StatusCode, Body: string(body)}
+		return nil, &Error{Status: resp.StatusCode, Body: string(body)}
 	}
 }
 
