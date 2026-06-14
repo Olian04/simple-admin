@@ -13,6 +13,7 @@ templ Page(data PageData) {
 			<link rel="stylesheet" href="/static/css/app.css"/>
 			<script src="/static/js/htmx.min.js" defer></script>
 			<script src="/static/js/app.js" defer></script>
+			<script src="/static/js/islands/credentials.js" defer></script>
 		</head>
 		<body>
 			<div class="sa-shell">
@@ -51,6 +52,10 @@ templ Sidebar(data PageData) {
 				}
 			</ul>
 		}
+		<p class="menu-label">Settings</p>
+		<ul class="menu-list">
+			<li><a href="/ui/credentials">Credentials</a></li>
+		</ul>
 	</nav>
 }
 

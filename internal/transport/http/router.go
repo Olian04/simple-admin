@@ -10,6 +10,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	"github.com/Olian04/simple-admin/internal/transport/http/handlers"
+	"github.com/Olian04/simple-admin/internal/upstream"
 	"github.com/Olian04/simple-admin/web"
 )
 
@@ -28,6 +29,7 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	// Admin UI.
 	ui := handlers.NewUIHandler(resources)
 	mux.Handle("GET /ui", stdhttp.HandlerFunc(ui.Index))
+	mux.Handle("GET /ui/credentials", stdhttp.HandlerFunc(ui.Credentials))
 	mux.Handle("GET /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.List))
 	mux.Handle("POST /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.Create))
 	mux.Handle("GET /ui/{backend}/{name}/new", stdhttp.HandlerFunc(ui.NewForm))
@@ -37,7 +39,18 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	mux.Handle("GET /ui/{backend}/{name}/{id}/delete", stdhttp.HandlerFunc(ui.DeleteConfirm))
 	mux.Handle("DELETE /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Delete))
 
-	return middleware(mux, registry)
+	return middleware(withCredentials(mux), registry)
+}
+
+// withCredentials lifts the browser-supplied passthrough credential
+// (X-Sa-Credential header) into the request context for the upstream client.
+func withCredentials(next stdhttp.Handler) stdhttp.Handler {
+	return stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		if cred := r.Header.Get("X-Sa-Credential"); cred != "" {
+			r = r.WithContext(upstream.WithCredential(r.Context(), cred))
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func middleware(next stdhttp.Handler, registry *metrics.Registry) stdhttp.Handler {

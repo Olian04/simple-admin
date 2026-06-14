@@ -41,7 +41,7 @@ func (h *UIHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := rt.Service.List(r.Context(), resource.ListParams{})
 	if err != nil {
-		h.renderError(w, r, rt.Descriptor, "Failed to load "+rt.Descriptor.Label, err)
+		h.handleReadError(w, r, rt.Descriptor, err)
 		return
 	}
 	vm := buildListView(rt.Descriptor, res.Items)
@@ -57,12 +57,8 @@ func (h *UIHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	rec, err := rt.Service.Get(r.Context(), id)
-	if errors.Is(err, upstream.ErrNotFound) {
-		h.renderStatus(w, r, http.StatusNotFound, rt.Descriptor, "Not found", "No "+rt.Descriptor.Label+" with id "+id)
-		return
-	}
 	if err != nil {
-		h.renderError(w, r, rt.Descriptor, "Failed to load record", err)
+		h.handleReadError(w, r, rt.Descriptor, err)
 		return
 	}
 	vm := buildDetailView(rt.Descriptor, id, rec)
@@ -82,6 +78,40 @@ func (h *UIHandler) lookup(w http.ResponseWriter, r *http.Request) (*resource.Ru
 		return nil, false
 	}
 	return rt, true
+}
+
+// Credentials renders the per-backend credential entry page.
+func (h *UIHandler) Credentials(w http.ResponseWriter, r *http.Request) {
+	var bs []views.CredBackend
+	for _, b := range h.registry.Backends() {
+		auth := resource.AuthScheme{Type: "none"}
+		if rts := h.registry.ResourcesFor(b.ID); len(rts) > 0 {
+			auth = rts[0].Descriptor.AuthScheme
+		}
+		bs = append(bs, views.CredBackend{
+			ID:        b.ID,
+			Label:     b.Label,
+			AuthType:  auth.Type,
+			In:        auth.In,
+			Name:      auth.Name,
+			NeedsCred: auth.Type == "apikey",
+		})
+	}
+	data := h.pageData("", "", views.Credentials(views.CredentialsView{Backends: bs}))
+	h.render(w, r, views.Page(data))
+}
+
+// handleReadError maps upstream read errors to friendly pages.
+func (h *UIHandler) handleReadError(w http.ResponseWriter, r *http.Request, d resource.ResourceDescriptor, err error) {
+	switch {
+	case errors.Is(err, upstream.ErrUnauthorized):
+		h.renderStatus(w, r, http.StatusUnauthorized, d, "Credential required",
+			"The backend rejected the request. Set or update this backend's credential on the Credentials page (in the sidebar).")
+	case errors.Is(err, upstream.ErrNotFound):
+		h.renderStatus(w, r, http.StatusNotFound, d, "Not found", "Record not found.")
+	default:
+		h.renderError(w, r, d, "Upstream error", err)
+	}
 }
 
 func (h *UIHandler) renderError(w http.ResponseWriter, r *http.Request, d resource.ResourceDescriptor, title string, err error) {

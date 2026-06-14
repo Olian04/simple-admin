@@ -87,6 +87,21 @@ type FormFieldView struct {
 	Error     string
 }
 
+// CredBackend describes a backend's auth requirement on the credentials page.
+type CredBackend struct {
+	ID        string
+	Label     string
+	AuthType  string // none|apikey|bearer|basic|oauth
+	In        string
+	Name      string
+	NeedsCred bool
+}
+
+// CredentialsView is the data for the credentials page.
+type CredentialsView struct {
+	Backends []CredBackend
+}
+
 // DeleteView is the data for the delete-confirm modal.
 type DeleteView struct {
 	Backend resource.Backend

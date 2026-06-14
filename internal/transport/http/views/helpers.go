@@ -25,3 +25,15 @@ func uiURL(parts ...string) templ.SafeURL {
 }
 
 func colspan(n int) string { return strconv.Itoa(n) }
+
+// schemeLabel describes a backend's auth scheme for the credentials page.
+func schemeLabel(b CredBackend) string {
+	switch b.AuthType {
+	case "apikey":
+		return "API key (" + b.In + ": " + b.Name + ")"
+	case "bearer":
+		return "Bearer token (not yet supported)"
+	default:
+		return b.AuthType
+	}
+}
