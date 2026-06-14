@@ -87,6 +87,15 @@ type FormFieldView struct {
 	Error     string
 }
 
+// DeleteView is the data for the delete-confirm modal.
+type DeleteView struct {
+	Backend resource.Backend
+	Name    string
+	Label   string
+	ID      string
+	Error   string
+}
+
 // FormView is the data for a create/edit form.
 type FormView struct {
 	Backend    resource.Backend

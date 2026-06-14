@@ -34,6 +34,8 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	mux.Handle("GET /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Detail))
 	mux.Handle("GET /ui/{backend}/{name}/{id}/edit", stdhttp.HandlerFunc(ui.EditForm))
 	mux.Handle("PUT /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Update))
+	mux.Handle("GET /ui/{backend}/{name}/{id}/delete", stdhttp.HandlerFunc(ui.DeleteConfirm))
+	mux.Handle("DELETE /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Delete))
 
 	return middleware(mux, registry)
 }

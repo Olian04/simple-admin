@@ -210,6 +210,45 @@ func buildFormView(d resource.ResourceDescriptor, mode, id string, data resource
 	}
 }
 
+// DeleteConfirm renders the delete-confirmation modal (loaded into #sa-modal).
+func (h *UIHandler) DeleteConfirm(w http.ResponseWriter, r *http.Request) {
+	rt, ok := h.lookup(w, r)
+	if !ok {
+		return
+	}
+	if !rt.Descriptor.Capabilities.Delete {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	d := rt.Descriptor
+	h.render(w, r, views.DeleteConfirm(views.DeleteView{
+		Backend: d.Backend, Name: d.Name, Label: d.Label, ID: r.PathValue("id"),
+	}))
+}
+
+// Delete removes a record; on success it redirects (HX-Redirect) to the list.
+func (h *UIHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	rt, ok := h.lookup(w, r)
+	if !ok {
+		return
+	}
+	d := rt.Descriptor
+	if !d.Capabilities.Delete {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	id := r.PathValue("id")
+	if err := rt.Service.Delete(r.Context(), id); err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		h.render(w, r, views.DeleteConfirm(views.DeleteView{
+			Backend: d.Backend, Name: d.Name, Label: d.Label, ID: id, Error: err.Error(),
+		}))
+		return
+	}
+	w.Header().Set("HX-Redirect", "/ui/"+d.Backend.ID+"/"+d.Name)
+	w.WriteHeader(http.StatusOK)
+}
+
 func isTruthy(v any) bool {
 	switch val := v.(type) {
 	case bool:
