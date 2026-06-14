@@ -1,11 +1,11 @@
-package validation_test
+package schemavalidation_test
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/Olian04/simple-admin/internal/domain/resource"
-	"github.com/Olian04/simple-admin/internal/validation"
+	"github.com/Olian04/simple-admin/internal/schemavalidation"
 )
 
 const schema = `{
@@ -18,9 +18,9 @@ const schema = `{
   }
 }`
 
-func newValidator(t *testing.T) *validation.Validator {
+func newValidator(t *testing.T) *schemavalidation.Validator {
 	t.Helper()
-	v, err := validation.New([]byte(schema))
+	v, err := schemavalidation.New([]byte(schema))
 	if err != nil {
 		t.Fatalf("compile: %v", err)
 	}

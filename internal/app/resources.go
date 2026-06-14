@@ -10,7 +10,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/source/openapi"
 	"github.com/Olian04/simple-admin/internal/ui/render"
 	"github.com/Olian04/simple-admin/internal/backend"
-	"github.com/Olian04/simple-admin/internal/validation"
+	"github.com/Olian04/simple-admin/internal/schemavalidation"
 )
 
 // buildRegistry runs the descriptor sources (manual + discovery) and returns a
@@ -37,7 +37,7 @@ func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*r
 	runtimes := make([]*resource.Runtime, 0, len(all))
 	for i := range all {
 		d := all[i]
-		validator, err := validation.New(d.Schema.Raw)
+		validator, err := schemavalidation.New(d.Schema.Raw)
 		if err != nil {
 			return nil, fmt.Errorf("backend %q resource %q schema: %w", d.Backend.ID, d.Name, err)
 		}

@@ -1,6 +1,6 @@
-// Package validation wraps santhosh-tekuri/jsonschema to validate record
+// Package schemavalidation wraps santhosh-tekuri/jsonschema to validate record
 // bodies against a resource's JSON Schema, returning field-keyed errors.
-package validation
+package schemavalidation
 
 import (
 	"encoding/json"

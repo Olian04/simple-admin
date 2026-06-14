@@ -30,8 +30,8 @@ Phase 1 (MVP) complete (steps 0–13 done).
 | p2-2 | GET / → /ui + favicon 204 | done | GET /{$}→302 /ui, favicon 204; smoke ok | 2026-06-14 |
 | p2-3 | Remove echo scaffold + rename product → simple-admin | done | echo deleted; product renamed (cli/binary/logs/prefix/goreleaser/release) | 2026-06-14 |
 | p2-4 | Rename internal/upstream → internal/backend | done | pkg moved; UpstreamError→Error; importers updated | 2026-06-14 |
-| p2-5 | Rename internal/validation → internal/schemavalidation | in_progress | | 2026-06-14 |
-| p2-6 | Restructure → internal/views + internal/views/form | todo | | 2026-06-14 |
+| p2-5 | Rename internal/validation → internal/schemavalidation | done | pkg+test moved; importer updated | 2026-06-14 |
+| p2-6 | Restructure → internal/views + internal/views/form | in_progress | | 2026-06-14 |
 | p2-7 | Built-in widgets → templ | todo | | 2026-06-14 |
 | p2-8 | Config ui: section (CDN URLs, page size) | todo | | 2026-06-14 |
 | p2-9 | Discovery polling loop | todo | | 2026-06-14 |
