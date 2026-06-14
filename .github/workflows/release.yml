@@ -70,8 +70,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: architecture-template/go.mod
-          cache-dependency-path: architecture-template/go.sum
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
 
       - name: Record build timestamp and release intro
         run: |
@@ -86,7 +86,7 @@ jobs:
       - name: Set container registry metadata
         run: |
           OWNER="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          IMAGE="ghcr.io/${OWNER}/echo-template"
+          IMAGE="ghcr.io/${OWNER}/simple-admin"
           echo "REGISTRY_IMAGE=${IMAGE}" >> "$GITHUB_ENV"
           if [ "${{ inputs.prerelease }}" = "true" ]; then
             echo "PUSH_LATEST=false" >> "$GITHUB_ENV"
@@ -121,7 +121,6 @@ jobs:
         with:
           distribution: goreleaser
           version: "~> v2"
-          workdir: architecture-template
           args: release --clean --verbose --config goreleaser/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -136,7 +135,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Release job (echo-template)"
+            echo "## Release job (simple-admin)"
             echo ""
             echo "- **GoReleaser**: trimpath builds, Syft SBOMs, git changelog, GHCR image (\`dockers_v2\` + image SBOM), \`checksums.txt\`, GitHub Release."
             echo ""

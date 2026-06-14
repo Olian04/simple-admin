@@ -25,8 +25,8 @@ func main() {
 	cli.VersionPrinter = printVersion(vi)
 
 	root := &cli.Command{
-		Name:    "echo",
-		Usage:   "Echo service",
+		Name:    "simple-admin",
+		Usage:   "Portable schema-driven admin UI",
 		Version: vi.Version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{

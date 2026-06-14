@@ -29,9 +29,9 @@ builds:
     ldflags:
       - -s
       - -w
-      - -X github.com/Olian04/go-app-template/cmd/simple-admin/version.Version={{ .Tag }}
-      - -X github.com/Olian04/go-app-template/cmd/simple-admin/version.Revision={{ .Commit }}
-      - -X github.com/Olian04/go-app-template/cmd/simple-admin/version.BuildTime={{ .Env.APP_BUILD_TIME }}
+      - -X github.com/Olian04/simple-admin/cmd/simple-admin/version.Version={{ .Tag }}
+      - -X github.com/Olian04/simple-admin/cmd/simple-admin/version.Revision={{ .Commit }}
+      - -X github.com/Olian04/simple-admin/cmd/simple-admin/version.BuildTime={{ .Env.APP_BUILD_TIME }}
 
 archives:
   - id: simple-admin
@@ -92,7 +92,7 @@ release:
     | Asset | Description |
     |-------|-------------|
     | `checksums.txt` | SHA256 checksums for all files in this release |
-    | `echo-template_*` | Per-OS/arch binaries |
+    | `simple-admin-*` | Per-OS/arch binaries |
     | `*.sbom.json` | SPDX JSON SBOM per binary ([Syft](https://github.com/anchore/syft)) |
 
     Verify after download (Linux/macOS):
@@ -117,8 +117,8 @@ release:
 
     ```bash
     # Apple Silicon (arm64)
-    xattr -d com.apple.quarantine echo-template-darwin-arm64
+    xattr -d com.apple.quarantine simple-admin-darwin-arm64
 
     # Intel (amd64)
-    xattr -d com.apple.quarantine echo-template-darwin-amd64
+    xattr -d com.apple.quarantine simple-admin-darwin-amd64
     ```

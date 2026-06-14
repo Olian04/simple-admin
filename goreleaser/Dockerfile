@@ -17,8 +17,8 @@ ARG REVISION=unknown
 ARG BUILD_TIME=unknown
 ARG TARGETPLATFORM
 
-LABEL org.opencontainers.image.title="echo-template"
-LABEL org.opencontainers.image.description="Sample architecture-template service (replace when forking)."
+LABEL org.opencontainers.image.title="simple-admin"
+LABEL org.opencontainers.image.description="Portable schema-driven admin UI."
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.created="${BUILD_TIME}"

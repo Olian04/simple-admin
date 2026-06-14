@@ -6,7 +6,6 @@ import (
 	stdhttp "net/http"
 	"time"
 
-	"github.com/Olian04/simple-admin/internal/domain/echo"
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	"github.com/Olian04/simple-admin/internal/transport/http/handlers"
@@ -15,13 +14,11 @@ import (
 	"github.com/Olian04/simple-admin/web"
 )
 
-func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Registry, widgets *render.Registry) stdhttp.Handler {
+func Router(registry *metrics.Registry, resources *resource.Registry, widgets *render.Registry) stdhttp.Handler {
 	mux := stdhttp.NewServeMux()
-	echoHandler := handlers.NewEchoHandler(svc)
 	mux.Handle("GET /healthz", stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
 		w.WriteHeader(stdhttp.StatusNoContent)
 	}))
-	mux.Handle("POST /echo", echoHandler)
 
 	// Root redirect + favicon. {$} anchors the exact root path so it does not
 	// swallow other unmatched routes.

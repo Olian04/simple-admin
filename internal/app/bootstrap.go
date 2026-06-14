@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/Olian04/simple-admin/internal/config"
-	"github.com/Olian04/simple-admin/internal/domain/echo"
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	httptransport "github.com/Olian04/simple-admin/internal/transport/http"
 	"github.com/Olian04/simple-admin/internal/transport/metricshttp"
@@ -35,8 +34,7 @@ func Run(ctx context.Context, cfg config.Config, configDir string) error {
 		return fmt.Errorf("build widgets: %w", err)
 	}
 
-	svc := echo.NewService()
-	handler := httptransport.Router(svc, registry, resources, widgets)
+	handler := httptransport.Router(registry, resources, widgets)
 
 	n := 1
 	metricsOn := cfg.MetricsEnabled()
@@ -49,9 +47,9 @@ func Run(ctx context.Context, cfg config.Config, configDir string) error {
 
 	if metricsOn {
 		go func() { errCh <- metricshttp.Serve(ctx, cfg.Metrics.ListenAddr, registry.Handler()) }()
-		slog.Info("echo service started", "http_addr", cfg.HTTP.ListenAddr, "metrics_addr", cfg.Metrics.ListenAddr)
+		slog.Info("simple-admin started", "http_addr", cfg.HTTP.ListenAddr, "metrics_addr", cfg.Metrics.ListenAddr)
 	} else {
-		slog.Info("echo service started", "http_addr", cfg.HTTP.ListenAddr, "metrics_enabled", false)
+		slog.Info("simple-admin started", "http_addr", cfg.HTTP.ListenAddr, "metrics_enabled", false)
 	}
 
 	select {

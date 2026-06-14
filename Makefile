@@ -11,12 +11,12 @@ help: ## Show available make targets
 generate: ## Generate code (templ components -> *_templ.go)
 	go tool templ generate
 
-build: ## Build echo binary from ./cmd/simple-admin
+build: ## Build simple-admin binary from ./cmd/simple-admin
 build: generate
 	mkdir -p $(BUILD_OUTPUT_DIR)
-	go build -trimpath -ldflags "-s -w -X github.com/Olian04/simple-admin/cmd/simple-admin/version.Revision=$(REV) -X github.com/Olian04/simple-admin/cmd/simple-admin/version.BuildTime=$(BUILD_TIME)" -o $(BUILD_OUTPUT_DIR)/echo ./cmd/simple-admin
+	go build -trimpath -ldflags "-s -w -X github.com/Olian04/simple-admin/cmd/simple-admin/version.Revision=$(REV) -X github.com/Olian04/simple-admin/cmd/simple-admin/version.BuildTime=$(BUILD_TIME)" -o $(BUILD_OUTPUT_DIR)/simple-admin ./cmd/simple-admin
 
-run: ## Run echo binary from ./cmd/simple-admin
+run: ## Run simple-admin from ./cmd/simple-admin
 run: generate
 	go run ./cmd/simple-admin
 
