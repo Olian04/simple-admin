@@ -5,3 +5,6 @@ pb_data/
 example-backend
 example-backend.exe
 *.exe
+
+# Local run logs
+*.log
