@@ -29,6 +29,11 @@ func main() {
 	})
 
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		// Skip PocketBase's first-run installer (no browser popup on startup).
+		// This is a dev/reference backend; superusers can be created via the CLI
+		// (`example-backend superuser upsert ...`) if the admin API is needed.
+		e.InstallerFunc = nil
+
 		// Optional static API-key gate on the data API, used to exercise the
 		// admin UI's API-key auth passthrough. Enabled by setting EXAMPLE_API_KEY.
 		// The OpenAPI spec advertises the matching apiKey security scheme.

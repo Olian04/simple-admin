@@ -42,3 +42,13 @@ EXAMPLE_API_KEY=dev-secret-key go run . serve --http=127.0.0.1:8090
 
 PocketBase's own token auth (superusers/auth collections) is left intact and is
 the intended future test bed for bearer/token auth passthrough.
+
+## No installer popup
+
+The first-run PocketBase installer is disabled (`ServeEvent.InstallerFunc = nil`),
+so no browser setup page opens on startup. If you need the PocketBase dashboard,
+create a superuser via the CLI:
+
+```sh
+go run . superuser upsert admin@example.com your-password
+```
