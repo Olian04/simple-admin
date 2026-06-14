@@ -36,9 +36,22 @@ func Load(path string) (Config, error) {
 	if err := dec.Decode(&cfg); err != nil {
 		return Config{}, fmt.Errorf("parse config yaml: %w", err)
 	}
+	expandSecrets(&cfg)
 	cfg = cfg.WithDefaults()
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+// expandSecrets resolves ${ENV} references in server-side secrets. Only
+// discovery-request credentials are server-side; all other auth secrets live
+// in the browser and never appear in config.
+func expandSecrets(cfg *Config) {
+	for i := range cfg.Backends {
+		d := cfg.Backends[i].Discovery
+		if d != nil && d.Auth != nil && d.Auth.Value != "" {
+			d.Auth.Value = os.ExpandEnv(d.Auth.Value)
+		}
+	}
 }

@@ -7,6 +7,10 @@ const (
 	DefaultLoggingLevel      = "info"
 	DefaultLoggingFormat     = "json"
 	DefaultLoggingStream     = "stdout"
+
+	DefaultAuthType     = "none"
+	DefaultIDField      = "id"
+	DefaultPollInterval = "5m"
 )
 
 const DefaultMetricsEnabled = true

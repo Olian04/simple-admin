@@ -17,3 +17,50 @@ logging:
   level: 'info'
   format: 'json'
   stream: 'stdout'
+
+# Backends the admin UI manages. Each backend is EITHER manual (resources listed
+# explicitly with their own JSON Schema) OR discovery (resources derived from an
+# OpenAPI spec). Upstream CRUD secrets are NOT here — they live in the browser,
+# keyed by backend id. Only discovery-request creds are server-side (env-expanded).
+backends:
+  # --- manual mode ---
+  - id: 'example'                       # stable id -> sidebar group + localStorage cred key
+    label: 'Example API'
+    base_url: 'http://localhost:8090'   # CRUD base; paths resolved against this
+    auth:                               # SCHEME ONLY — no secret value
+      type: 'apikey'                    # none|apikey (bearer|basic|oauth not yet supported)
+      in: 'header'
+      name: 'X-API-Key'
+    resources:
+      - name: 'posts'
+        label: 'Posts'
+        schema: './schemas/post.json'   # JSON Schema by path
+        # schema: { url: 'http://localhost:8090/schemas/post.json' }  # OR fetched from backend
+        paths:
+          collection: '/api/collections/posts/records'
+          item: '/api/collections/posts/records/{id}'
+        id_field: 'id'
+        field_templates:                # optional per-field widget overrides
+          body: 'code'                  # shorthand built-in id
+          status:
+            template: 'code'            # long form + args
+            args:
+              language: 'json'
+          rating:
+            template: 'rating'
+            args:
+              max: { jsonpath: '$.maxRating' }   # arg resolved from the record
+
+  # --- discovery mode (polling built later; scheme derived from the spec) ---
+  - id: 'gateway'
+    label: 'Service Gateway'
+    base_url: 'http://localhost:8090'
+    # NO `auth:` here — CRUD auth scheme is derived from the spec's securitySchemes.
+    discovery:
+      url: 'http://localhost:8090/openapi.json'
+      poll_interval: '5m'
+      auth:                             # creds for the discovery request only (server-side)
+        type: 'apikey'
+        in: 'header'
+        name: 'X-API-Key'
+        value: '${GATEWAY_DISCOVERY_KEY}'
