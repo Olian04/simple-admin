@@ -1,0 +1,125 @@
+# GoReleaser: https://goreleaser.com/
+# Run from architecture-template/ (CI sets workdir). Locally: cd architecture-template && goreleaser check --config goreleaser/.goreleaser.yaml
+#
+# CI sets: APP_BUILD_TIME, RELEASE_NAME, RELEASE_BODY, REGISTRY_IMAGE, PUSH_LATEST, GORELEASER_CURRENT_TAG
+version: 2
+
+project_name: echo-template
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: echo
+    main: ./cmd/echo
+    binary: echo
+    dir: .
+    flags:
+      - -trimpath
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s
+      - -w
+      - -X github.com/Olian04/go-app-template/cmd/echo/version.Version={{ .Tag }}
+      - -X github.com/Olian04/go-app-template/cmd/echo/version.Revision={{ .Commit }}
+      - -X github.com/Olian04/go-app-template/cmd/echo/version.BuildTime={{ .Env.APP_BUILD_TIME }}
+
+archives:
+  - id: echo
+    formats: [binary]
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+    ids:
+      - echo
+
+checksum:
+  name_template: checksums.txt
+
+sboms:
+  - id: echo
+    artifacts: binary
+    ids:
+      - echo
+    disable: false
+
+changelog:
+  use: git
+  sort: asc
+  abbrev: 7
+  filters:
+    exclude:
+      - "(?i)^merge "
+      - "(?i)^merge pull request"
+      - "^chore\\(release\\):"
+      - "^ci:"
+      - "^docs:"
+
+dockers_v2:
+  - dockerfile: goreleaser/Dockerfile
+    ids:
+      - echo
+    images:
+      - "{{ .Env.REGISTRY_IMAGE }}"
+    tags:
+      - "{{ .Tag }}"
+      - '{{ if eq .Env.PUSH_LATEST "true" }}latest{{ end }}'
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    build_args:
+      VERSION: "{{ .Tag }}"
+      REVISION: "{{ .Commit }}"
+      BUILD_TIME: "{{ .Env.APP_BUILD_TIME }}"
+    disable: "{{ .IsSnapshot }}"
+    sbom: true
+
+release:
+  prerelease: auto
+  name_template: "{{ .Env.RELEASE_NAME }}"
+  header: |
+    {{ .Env.RELEASE_BODY }}
+
+  footer: |
+    ## Downloads
+
+    | Asset | Description |
+    |-------|-------------|
+    | `checksums.txt` | SHA256 checksums for all files in this release |
+    | `echo-template_*` | Per-OS/arch binaries |
+    | `*.sbom.json` | SPDX JSON SBOM per binary ([Syft](https://github.com/anchore/syft)) |
+
+    Verify after download (Linux/macOS):
+
+    ```bash
+    sha256sum -c checksums.txt
+    ```
+
+    On Windows, verify the printed SHA256 against the file from `checksums.txt` using your preferred tool.
+
+    {{ if .Env.REGISTRY_IMAGE }}## Container image
+
+    Multi-arch (`linux/amd64`, `linux/arm64`) OCI image on GHCR. The image build includes SBOM attestations (see BuildKit / `dockers_v2`).
+
+    ```bash
+    docker pull {{ .Env.REGISTRY_IMAGE }}:{{ .Tag }}
+    ```
+    {{ end }}
+    ## macOS Gatekeeper
+
+    If macOS shows a Gatekeeper warning (“Apple could not verify…”):
+
+    ```bash
+    # Apple Silicon (arm64)
+    xattr -d com.apple.quarantine echo-template-darwin-arm64
+
+    # Intel (amd64)
+    xattr -d com.apple.quarantine echo-template-darwin-amd64
+    ```

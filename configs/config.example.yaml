@@ -1,0 +1,19 @@
+# `labels` keys must be valid Prometheus label names (legacy ASCII rules).
+# See https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
+labels:
+  service: 'echo'
+  env: 'local'
+
+http:
+  listen_addr: ':8080'
+
+metrics:
+  enabled: true
+  listen_addr: ':9090'
+  # Prometheus namespace; series look like `{prefix}_http_requests_total`.
+  metric_prefix: 'echo'
+
+logging:
+  level: 'info'
+  format: 'json'
+  stream: 'stdout'

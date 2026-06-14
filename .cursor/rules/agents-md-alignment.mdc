@@ -1,0 +1,20 @@
+---
+description: Align all code changes with docs/AGENTS.md (product terms, layout, naming, anti-patterns).
+alwaysApply: true
+---
+
+# Align with `docs/AGENTS.md`
+
+For every code change in repo (new code, refactor, tests, wiring), follow `docs/AGENTS.md`.
+Goal: keep product words, package boundaries, repo conventions aligned.
+
+Before big edits, skim/re-read `docs/AGENTS.md` (and deeper refs it points to). Treat as source of truth for:
+
+- Terminology: bridge vs relay vs process, `from` / `to`, relay orchestration in `internal/app`, avoid names like `bridgeRuntime`.
+- Layout/responsibility: where `cmd/bifrost`, `internal/app`, `internal/domain/relay`, `internal/config`, `internal/integrations/kafka`, `internal/observability/metrics`, and `test/unit` unit tests belong.
+- Naming/imports: do not shadow `internal/domain/relay` import with local `bridge`; keep action-oriented names in `internal/app`.
+- Errors/metrics: error wrapping style, metric prefixes `bifrost_` and `bifrost_relay_*`.
+- Anti-patterns: no catch-all `util` / `helpers`; test behavior changes in `internal/` and relay wiring.
+
+If generic advice conflicts with `docs/AGENTS.md`, pick `docs/AGENTS.md`.
+If public behavior or big package boundaries change, update `docs/AGENTS.md` in same effort.
