@@ -73,3 +73,30 @@ type ErrorView struct {
 	Title   string
 	Message string
 }
+
+// FormFieldView is one input in a create/edit form.
+type FormFieldView struct {
+	Name      string
+	Label     string
+	Kind      string // string|number|integer|boolean|enum|array|object
+	InputType string // HTML input type for text-ish kinds
+	Value     string
+	Checked   bool // for boolean
+	Enum      []string
+	Required  bool
+	Error     string
+}
+
+// FormView is the data for a create/edit form.
+type FormView struct {
+	Backend    resource.Backend
+	Name       string
+	Label      string
+	Mode       string // create|edit
+	ID         string
+	Action     string // admin route the form submits to
+	UsePut     bool   // edit submits via hx-put; create via hx-post
+	CancelURL  string
+	FormError  string // non-field-level error
+	Fields     []FormFieldView
+}

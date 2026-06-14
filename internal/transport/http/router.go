@@ -29,7 +29,11 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	ui := handlers.NewUIHandler(resources)
 	mux.Handle("GET /ui", stdhttp.HandlerFunc(ui.Index))
 	mux.Handle("GET /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.List))
+	mux.Handle("POST /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.Create))
+	mux.Handle("GET /ui/{backend}/{name}/new", stdhttp.HandlerFunc(ui.NewForm))
 	mux.Handle("GET /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Detail))
+	mux.Handle("GET /ui/{backend}/{name}/{id}/edit", stdhttp.HandlerFunc(ui.EditForm))
+	mux.Handle("PUT /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Update))
 
 	return middleware(mux, registry)
 }
