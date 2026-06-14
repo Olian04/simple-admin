@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/a-h/templ"
 
 	"github.com/Olian04/simple-admin/internal/backend"
 	"github.com/Olian04/simple-admin/internal/domain/resource"
@@ -188,8 +189,8 @@ func (h *UIHandler) buildFormView(d resource.ResourceDescriptor, mode, id string
 		} else {
 			fv.Value = views.ValueString(f.Value)
 		}
-		if html, ok := h.renderWidget(d, f, data, known); ok {
-			fv.CustomHTML = html
+		if c, ok := h.renderWidget(d, f, data, known); ok {
+			fv.Widget = c
 		}
 		fields = append(fields, fv)
 	}
@@ -266,9 +267,9 @@ func (h *UIHandler) resourceNames(backendID string) []string {
 // renderWidget resolves a field's custom widget (explicit config or convention
 // auto-select) and renders it to HTML. Returns ok=false to fall back to the
 // built-in input.
-func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField, data resource.Record, known []string) (template.HTML, bool) {
+func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField, data resource.Record, known []string) (templ.Component, bool) {
 	if h.widgets == nil {
-		return "", false
+		return nil, false
 	}
 	var widgetID, optionsURL string
 	var args map[string]any
@@ -288,7 +289,7 @@ func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField
 	}
 
 	if widgetID == "" || !h.widgets.Has(widgetID) {
-		return "", false
+		return nil, false
 	}
 
 	switch widgetID {
@@ -311,7 +312,7 @@ func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField
 		}
 	}
 
-	html, err := h.widgets.Render(widgetID, form.FieldContext{
+	return h.widgets.Component(widgetID, form.FieldContext{
 		Name:       f.Name,
 		Label:      f.Label,
 		InputID:    "f_" + f.Name,
@@ -320,10 +321,6 @@ func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField
 		Args:       args,
 		OptionsURL: optionsURL,
 	})
-	if err != nil {
-		return "", false
-	}
-	return html, true
 }
 
 func modeFromFormat(format string) string {

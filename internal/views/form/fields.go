@@ -4,7 +4,7 @@
 package form
 
 import (
-	"html/template"
+	"github.com/a-h/templ"
 
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 )
@@ -62,9 +62,9 @@ type FormFieldView struct {
 	Value      string
 	Checked    bool // for boolean
 	Enum       []string
-	Required   bool
-	Error      string
-	CustomHTML template.HTML // pre-rendered custom widget; when set, overrides the kind switch
+	Required bool
+	Error    string
+	Widget   templ.Component // custom widget; when set, overrides the kind switch
 }
 
 // FormView is the data for a create/edit form.

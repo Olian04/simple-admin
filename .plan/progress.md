@@ -32,8 +32,8 @@ Phase 1 (MVP) complete (steps 0–13 done).
 | p2-4 | Rename internal/upstream → internal/backend | done | pkg moved; UpstreamError→Error; importers updated | 2026-06-14 |
 | p2-5 | Rename internal/validation → internal/schemavalidation | done | pkg+test moved; importer updated | 2026-06-14 |
 | p2-6 | Restructure → internal/views + internal/views/form | done | ui/ deleted; views top-level + views/form; WidgetRegistry; lint clean | 2026-06-14 |
-| p2-7 | Built-in widgets → templ | in_progress | | 2026-06-14 |
-| p2-8 | Config ui: section (CDN URLs, page size) | todo | | 2026-06-14 |
+| p2-7 | Built-in widgets → templ | done | widgets.templ components + WidgetRegistry dispatch; html.tmpl deleted; verified | 2026-06-14 |
+| p2-8 | Config ui: section (CDN URLs, page size) | in_progress | | 2026-06-14 |
 | p2-9 | Discovery polling loop | todo | | 2026-06-14 |
 | p2-10 | Pagination + sort UI | todo | | 2026-06-14 |
 | p2-11 | Flash messages | todo | | 2026-06-14 |

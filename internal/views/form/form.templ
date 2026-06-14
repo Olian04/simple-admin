@@ -34,8 +34,8 @@ templ FormBody(vm FormView) {
 			<div class="field">
 				<label class="label">{ f.Label }</label>
 				<div class="control">
-					if f.CustomHTML != "" {
-						@templ.Raw(string(f.CustomHTML))
+					if f.Widget != nil {
+						@f.Widget
 					} else {
 						switch f.Kind {
 						case "boolean":

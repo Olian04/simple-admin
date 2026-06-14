@@ -2,19 +2,16 @@ package form
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"html/template"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/a-h/templ"
 )
 
-//go:embed templates/*.html.tmpl
-var builtinFS embed.FS
-
-// FieldContext is the data passed to a custom field-widget template. Built-in
-// templates and user-supplied templates both receive this.
+// FieldContext is the data passed to a field widget (built-in Templ component or
+// user-supplied html/template).
 type FieldContext struct {
 	Name       string
 	Label      string
@@ -35,36 +32,45 @@ func (c FieldContext) Arg(key, def string) string {
 	return def
 }
 
-// WidgetRegistry holds built-in and user-supplied field-widget templates.
-type WidgetRegistry struct {
-	templates map[string]*template.Template
+// builtinWidgets maps a widget id to its Templ component. Only datetime +
+// relation are real; the rest fall back to a plain input/textarea stub.
+var builtinWidgets = map[string]func(FieldContext) templ.Component{
+	"datetime":    widgetDatetime,
+	"relation":    widgetRelation,
+	"code":        widgetStubTextarea,
+	"geo":         widgetStubTextarea,
+	"markdown":    widgetStubTextarea,
+	"richtext":    widgetStubTextarea,
+	"json":        widgetStubTextarea,
+	"file":        widgetStubInput,
+	"image":       widgetStubInput,
+	"color":       widgetStubInput,
+	"tags":        widgetStubInput,
+	"multiselect": widgetStubInput,
+	"duration":    widgetStubInput,
+	"rating":      widgetStubInput,
+	"slug":        widgetStubInput,
+	"currency":    widgetStubInput,
+	"percent":     widgetStubInput,
+	"phone":       widgetStubInput,
+	"email":       widgetStubInput,
+	"url":         widgetStubInput,
+	"password":    widgetStubInput,
+	"country":     widgetStubInput,
+	"timezone":    widgetStubInput,
 }
 
-// NewWidgetRegistry parses the embedded built-in widgets plus any user-supplied
-// template files. Each user file is keyed by the exact path string from config
-// (resolved against baseDir when relative), so a field's Custom.TemplateFile is
-// its widget id. Fails fast on parse errors.
+// WidgetRegistry resolves a widget id to a Templ component. Built-ins are
+// compiled Templ; user-supplied template_files are runtime html/template,
+// wrapped as templ.Raw (record data is contextually escaped by html/template).
+type WidgetRegistry struct {
+	user map[string]*template.Template
+}
+
+// NewWidgetRegistry parses any user-supplied template files (keyed by the exact
+// config path, resolved against baseDir when relative). Built-ins need no setup.
 func NewWidgetRegistry(baseDir string, userFiles []string) (*WidgetRegistry, error) {
-	reg := &WidgetRegistry{templates: map[string]*template.Template{}}
-
-	entries, err := builtinFS.ReadDir("templates")
-	if err != nil {
-		return nil, fmt.Errorf("read built-in templates: %w", err)
-	}
-	for _, e := range entries {
-		name := e.Name()
-		id := strings.TrimSuffix(name, ".html.tmpl")
-		raw, err := builtinFS.ReadFile("templates/" + name)
-		if err != nil {
-			return nil, err
-		}
-		t, err := template.New(id).Parse(string(raw))
-		if err != nil {
-			return nil, fmt.Errorf("parse built-in widget %q: %w", id, err)
-		}
-		reg.templates[id] = t
-	}
-
+	reg := &WidgetRegistry{user: map[string]*template.Template{}}
 	for _, rel := range userFiles {
 		path := rel
 		if !filepath.IsAbs(path) {
@@ -79,28 +85,32 @@ func NewWidgetRegistry(baseDir string, userFiles []string) (*WidgetRegistry, err
 		if err != nil {
 			return nil, fmt.Errorf("parse template_file %q: %w", rel, err)
 		}
-		reg.templates[rel] = t
+		reg.user[rel] = t
 	}
 	return reg, nil
 }
 
-// Has reports whether a widget id is registered.
+// Has reports whether a widget id is registered (built-in or user-supplied).
 func (r *WidgetRegistry) Has(id string) bool {
-	_, ok := r.templates[id]
+	if _, ok := builtinWidgets[id]; ok {
+		return true
+	}
+	_, ok := r.user[id]
 	return ok
 }
 
-// Render executes a widget template and returns its HTML. Record data passed in
-// the context is contextually auto-escaped by html/template; only the operator-
-// authored template markup is trusted.
-func (r *WidgetRegistry) Render(id string, ctx FieldContext) (template.HTML, error) {
-	t, ok := r.templates[id]
-	if !ok {
-		return "", fmt.Errorf("unknown field widget %q", id)
+// Component returns the rendered widget for id, or ok=false to fall back to the
+// default input.
+func (r *WidgetRegistry) Component(id string, ctx FieldContext) (templ.Component, bool) {
+	if fn, ok := builtinWidgets[id]; ok {
+		return fn(ctx), true
 	}
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, ctx); err != nil {
-		return "", fmt.Errorf("render widget %q: %w", id, err)
+	if t, ok := r.user[id]; ok {
+		var buf bytes.Buffer
+		if err := t.Execute(&buf, ctx); err != nil {
+			return nil, false
+		}
+		return templ.Raw(buf.String()), true
 	}
-	return template.HTML(buf.String()), nil //nolint:gosec // operator template output
+	return nil, false
 }
