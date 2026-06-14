@@ -37,7 +37,9 @@ Phase 1 (MVP) complete (steps 0–13 done).
 | p2-9 | Discovery polling loop | done | assembleRuntimes + poller ticker + Registry.Replace; 2s smoke fires | 2026-06-14 |
 | p2-10 | Pagination + sort UI | done | ListParams sort + pagination/sortable headers + HTMX partial; verified | 2026-06-14 |
 | p2-11 | Flash messages | done | PageData.Flash + layout notification + app.js dismiss + ?flash redirects | 2026-06-14 |
-| p2-12 | High-value widgets (color/json/tags/markdown/code) | in_progress | | 2026-06-14 |
+| p2-12 | High-value widgets (color/json/tags/markdown/code) | done | templ widgets + islands (self + CDN) + CSP allowlist; HTML/CSP verified | 2026-06-14 |
+| p2-12b | Standardize widget field context (metadata + sibling queries) | in_progress | | 2026-06-14 |
 | p2-13 | Comments cleanup + docs + CI + .plan | todo | | 2026-06-14 |
+| extra | Disable PocketBase installer popup | todo | | 2026-06-14 |
 
 Current focus: **Phase 2, Step p2-0**. Staying stubbed: low-value widgets + bearer/basic/oauth auth. Routing keeps `/ui` prefix (+ `GET /` redirect). `internal/source` kept.

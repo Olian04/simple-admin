@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"log/slog"
 	stdhttp "net/http"
+	neturl "net/url"
 	"time"
 
 	"github.com/Olian04/simple-admin/internal/domain/resource"
@@ -48,20 +49,49 @@ func Router(registry *metrics.Registry, resources *resource.Registry, widgets *f
 	mux.Handle("GET /ui/{backend}/{name}/{id}/delete", stdhttp.HandlerFunc(uiHandler.DeleteConfirm))
 	mux.Handle("DELETE /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(uiHandler.Delete))
 
-	return middleware(securityHeaders(withCredentials(mux)), registry)
+	return middleware(securityHeaders(withCredentials(mux), ui), registry)
 }
 
-// securityHeaders sets a strict CSP. All scripts/styles are served from /static
-// (no inline JS; inline styles moved to app.css), so 'self' suffices.
-func securityHeaders(next stdhttp.Handler) stdhttp.Handler {
-	const csp = "default-src 'self'; script-src 'self'; style-src 'self'; " +
-		"img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'"
+// securityHeaders sets a CSP. Self-hosted assets only need 'self'; the rich
+// editor widgets (Monaco/EasyMDE) load from the configured CDNs, so those
+// origins are allowlisted and style 'unsafe-inline' + blob/data workers are
+// permitted (required by Monaco). Stricter when no CDN is configured.
+func securityHeaders(next stdhttp.Handler, ui config.UISection) stdhttp.Handler {
+	cdns := originList(ui.MonacoCDN, ui.EasyMDECDN)
+	csp := "default-src 'self'; " +
+		"script-src 'self'" + cdns + "; " +
+		"style-src 'self' 'unsafe-inline'" + cdns + "; " +
+		"img-src 'self' data:" + cdns + "; " +
+		"font-src 'self'" + cdns + "; " +
+		"connect-src 'self'" + cdns + "; " +
+		"worker-src 'self' blob: data:; " +
+		"base-uri 'self'; form-action 'self'"
 	return stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 		w.Header().Set("Content-Security-Policy", csp)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "same-origin")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// originList returns a space-prefixed, de-duplicated list of scheme://host
+// origins for the given URLs (empty string if none parse).
+func originList(urls ...string) string {
+	seen := map[string]bool{}
+	var out string
+	for _, raw := range urls {
+		u, err := neturl.Parse(raw)
+		if err != nil || u.Scheme == "" || u.Host == "" {
+			continue
+		}
+		origin := u.Scheme + "://" + u.Host
+		if seen[origin] {
+			continue
+		}
+		seen[origin] = true
+		out += " " + origin
+	}
+	return out
 }
 
 // withCredentials lifts the browser-supplied passthrough credential

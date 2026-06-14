@@ -40,7 +40,7 @@ func startDiscoveryPoller(ctx context.Context, cfg config.Config, configDir stri
 // discoveryInterval returns the smallest poll_interval among discovery backends,
 // or 0 if none use discovery.
 func discoveryInterval(cfg config.Config) time.Duration {
-	var min time.Duration
+	var smallest time.Duration
 	for _, b := range cfg.Backends {
 		if b.Discovery == nil {
 			continue
@@ -49,9 +49,9 @@ func discoveryInterval(cfg config.Config) time.Duration {
 		if err != nil || d <= 0 {
 			continue
 		}
-		if min == 0 || d < min {
-			min = d
+		if smallest == 0 || d < smallest {
+			smallest = d
 		}
 	}
-	return min
+	return smallest
 }

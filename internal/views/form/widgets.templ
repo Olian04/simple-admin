@@ -34,6 +34,39 @@ templ widgetRelation(fc FieldContext) {
 	</div>
 }
 
+templ widgetColor(fc FieldContext) {
+	<input class="input sa-color" type="color" name={ fc.Name } id={ fc.InputID } value={ fc.Value }/>
+}
+
+templ widgetJSON(fc FieldContext) {
+	<div data-sa-json>
+		<textarea class="textarea" name={ fc.Name } id={ fc.InputID } rows="6">{ fc.Value }</textarea>
+		<div class="mt-1">
+			<button type="button" class="button is-small" data-sa-json-format>Format</button>
+			<span class="help is-danger is-inline ml-2 is-hidden" data-sa-json-error></span>
+		</div>
+	</div>
+}
+
+templ widgetTags(fc FieldContext) {
+	<div data-sa-tags>
+		<input type="hidden" name={ fc.Name } id={ fc.InputID } value={ fc.Value }/>
+		<div class="tags sa-tags-list"></div>
+		<input class="input" type="text" data-sa-tags-input placeholder="Add a tag and press Enter"/>
+	</div>
+}
+
+templ widgetMarkdown(fc FieldContext) {
+	<textarea class="textarea" data-sa-markdown name={ fc.Name } id={ fc.InputID }>{ fc.Value }</textarea>
+}
+
+templ widgetCode(fc FieldContext) {
+	<div class="sa-code" data-sa-code data-language={ fc.Arg("language", "plaintext") }>
+		<textarea class="is-hidden" name={ fc.Name } id={ fc.InputID }>{ fc.Value }</textarea>
+		<div class="sa-code-editor"></div>
+	</div>
+}
+
 templ widgetStubInput(fc FieldContext) {
 	<input
 		class="input"

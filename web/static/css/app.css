@@ -39,6 +39,16 @@
   width: 12rem;
 }
 
+.sa-code-editor {
+  height: 320px;
+  border: 1px solid var(--bulma-border, #dbdbdb);
+}
+
+.sa-color {
+  max-width: 4rem;
+  padding: 0.2rem;
+}
+
 @media (max-width: 768px) {
   .sa-shell {
     flex-direction: column;
