@@ -56,7 +56,22 @@ func (h *UIHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, views.List(vm))
+	data.Flash = flashFromQuery(r)
 	h.render(w, r, views.Page(data))
+}
+
+// flashFromQuery maps a ?flash code to a success message.
+func flashFromQuery(r *http.Request) string {
+	switch r.URL.Query().Get("flash") {
+	case "created":
+		return "Created successfully."
+	case "updated":
+		return "Updated successfully."
+	case "deleted":
+		return "Deleted successfully."
+	default:
+		return ""
+	}
 }
 
 // listParams reads pagination/sort from the query, defaulting per ui config.
@@ -96,6 +111,7 @@ func (h *UIHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	}
 	vm := buildDetailView(rt.Descriptor, id, rec)
 	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, views.Detail(vm))
+	data.Flash = flashFromQuery(r)
 	h.render(w, r, views.Page(data))
 }
 

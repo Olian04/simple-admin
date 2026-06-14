@@ -32,6 +32,7 @@ type PageData struct {
 	Content    templ.Component
 	MonacoCDN  string // widget CDN bases, exposed to islands via root data attributes
 	EasyMDECDN string
+	Flash      string // transient success message (dismissable)
 }
 
 // Column is a list-view table column header.

@@ -91,7 +91,7 @@ func (h *UIHandler) Update(w http.ResponseWriter, r *http.Request) {
 		h.handleWriteError(w, r, rt.Descriptor, "edit", id, rec, err)
 		return
 	}
-	w.Header().Set("HX-Redirect", "/ui/"+rt.Descriptor.Backend.ID+"/"+rt.Descriptor.Name+"/"+id)
+	w.Header().Set("HX-Redirect", "/ui/"+rt.Descriptor.Backend.ID+"/"+rt.Descriptor.Name+"/"+id+"?flash=updated")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -120,7 +120,7 @@ func (h *UIHandler) redirectToRecord(w http.ResponseWriter, d resource.ResourceD
 	if id := views.DisplayValue(rec[d.IDField]); id != "" {
 		target += "/" + id
 	}
-	w.Header().Set("HX-Redirect", target)
+	w.Header().Set("HX-Redirect", target+"?flash=created")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -251,7 +251,7 @@ func (h *UIHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		}))
 		return
 	}
-	w.Header().Set("HX-Redirect", "/ui/"+d.Backend.ID+"/"+d.Name)
+	w.Header().Set("HX-Redirect", "/ui/"+d.Backend.ID+"/"+d.Name+"?flash=deleted")
 	w.WriteHeader(http.StatusOK)
 }
 

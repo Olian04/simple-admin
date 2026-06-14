@@ -22,6 +22,12 @@ templ Page(data PageData) {
 					@Sidebar(data)
 				</aside>
 				<main class="sa-main" id="sa-main">
+					if data.Flash != "" {
+						<div class="notification is-success is-light sa-flash" data-sa-flash>
+							<button class="delete" data-sa-flash-close></button>
+							{ data.Flash }
+						</div>
+					}
 					if data.Content != nil {
 						@data.Content
 					}
