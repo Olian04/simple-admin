@@ -36,4 +36,5 @@ profile.cov
 
 # This project (Makefile / GoReleaser)
 dist/
+dist_*.txt
 /simple-admin

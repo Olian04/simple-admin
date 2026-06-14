@@ -1,8 +1,0 @@
-﻿feat(ui): CSP headers + docs polish (MVP complete)
-
-Add strict Content-Security-Policy + nosniff/referrer headers (inline style
-moved to app.css class). Rewrite README (pitch, architecture mermaid, quick
-start, compliant-backend contract, auth, widgets) and docs/AGENTS.md for
-simple-admin (+ caveman directive + .plan resume pointer).
-
-golangci-lint clean. Completes the 14-step MVP build.
