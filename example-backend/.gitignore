@@ -1,0 +1,7 @@
+# PocketBase runtime data
+pb_data/
+
+# Built binaries
+example-backend
+example-backend.exe
+*.exe

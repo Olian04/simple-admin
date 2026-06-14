@@ -33,3 +33,14 @@ Append-only. Newest at bottom. Each entry: decision · rationale · date.
 13. **JSONPath lib = `ohler55/ojg` (`jp`)** for resolving template args from the record. — Standard JSONPath, fast, no cgo.
 
 14. **JSON Schema validation = `santhosh-tekuri/jsonschema/v6`** (already transitive; promote to direct). — Spec-compliant, structured pointer errors map to form fields.
+
+---
+
+## 2026-06-14 — Step 2 (reference backend)
+
+15. **List responses may be a pagination envelope `{items:[…], totalItems, …}`, not a bare array.** PocketBase (the reference backend) returns this shape. — Contract relaxed: admin upstream List client auto-detects bare-array vs `items` envelope. (PLAN contract bullet "list returns array" → "list returns array or `{items:[]}` envelope".)
+
+16. **Update verb is PATCH for PocketBase** (no PUT). — Admin must honor the spec's actual update verb per resource (PUT or PATCH from capabilities), not assume PUT.
+
+17. **PocketBase pinned v0.39.3**, CGO-free (modernc sqlite) → static Docker builds with `CGO_ENABLED=0`.
+

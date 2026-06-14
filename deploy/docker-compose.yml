@@ -1,0 +1,39 @@
+# Local stack: the simple-admin UI + the reference PocketBase backend.
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml up --build
+#
+# example-backend serves the compliant CRUD API + /openapi.json on :8090.
+# admin serves the UI on :8080.
+#
+# NOTE: the admin <-> backend `backends:` wiring lands in step 3 (config).
+# Until then the admin starts with its default config and the example
+# backend is fully usable on its own (curl http://localhost:8090/openapi.json).
+
+services:
+  example-backend:
+    build:
+      context: ../example-backend
+    ports:
+      - "8090:8090"
+    volumes:
+      - pb_data:/app/pb_data
+    # Set EXAMPLE_API_KEY to require X-API-Key on the data API (step 11 demo).
+    # environment:
+    #   EXAMPLE_API_KEY: "dev-secret-key"
+
+  admin:
+    build:
+      context: ..
+    ports:
+      - "8080:8080"
+    depends_on:
+      - example-backend
+    # Step 3+: mount a backends config pointing at http://example-backend:8090
+    # environment:
+    #   APP_CONFIG_FILE: /app/config.yaml
+    # volumes:
+    #   - ./admin-config.yaml:/app/config.yaml:ro
+
+volumes:
+  pb_data:

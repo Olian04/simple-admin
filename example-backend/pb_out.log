@@ -1,0 +1,8 @@
+2026/06/14 14:38:30 Server started at http://127.0.0.1:8090
+├─ REST API:  http://127.0.0.1:8090/api/
+└─ Dashboard: http://127.0.0.1:8090/_/
+
+(!) Launch the URL below in the browser if it hasn't been open already to create your first superuser account:
+http://127.0.0.1:8090/_/#/pbinstall/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJwYmNfMzE0MjYzNTgyMyIsImV4cCI6MTc4MTQ0MjUxMCwiaWQiOiJhMm5rMGc1Mms1ZWRucWsiLCJyZWZyZXNoYWJsZSI6ZmFsc2UsInR5cGUiOiJhdXRoIn0.hXM-DHWdQhneB-vPzVXQsf3XU1Dvgkr1J6oS18wr7do
+(you can also create your first superuser by running: C:\Users\rift9\projects\simple-admin\example-backend\example-backend.exe superuser upsert EMAIL PASS)
+

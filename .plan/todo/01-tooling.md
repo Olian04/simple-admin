@@ -21,6 +21,10 @@ Status: `done`
 - `go tool templ generate` exit 0 (no `.templ` yet → no-op)
 - `go build ./...`, `go vet ./...`, `go test ./...` all pass
 
+## Commit
+
+- `763f41e` build: add templ tooling + generate step
+
 ## Notes / follow-ups
 
 - Generated `*_templ.go` are gitignored; build/lint/test all regenerate first via the `generate` dep.
