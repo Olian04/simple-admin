@@ -56,7 +56,10 @@ func Run(ctx context.Context, cfg config.Config, configDir string) error {
 
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		// Signal-driven (SIGINT/SIGTERM) cancellation is a graceful shutdown,
+		// not an error — servers drain via their own ctx.Done() handlers.
+		slog.Info("shutting down", "reason", "signal")
+		return nil
 	case err := <-errCh:
 		return err
 	}

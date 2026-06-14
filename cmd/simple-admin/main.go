@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -41,8 +42,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := root.Run(ctx, os.Args); err != nil {
-		slog.Error("echo exited with error", "error_message", err)
+	if err := root.Run(ctx, os.Args); err != nil && !errors.Is(err, context.Canceled) {
+		slog.Error("exited with error", "error_message", err)
 		os.Exit(1)
 	}
 }

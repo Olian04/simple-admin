@@ -17,4 +17,4 @@ Status: `done`
 
 ## Commit
 
-- (next)
+- `3e64e3f` chore(.plan): seed Phase 2 tracking + standing .plan rule
