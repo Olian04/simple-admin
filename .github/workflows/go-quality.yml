@@ -22,6 +22,9 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
 
+      - name: Generate code (templ)
+        run: go tool templ generate
+
       - name: Run lint gate
         run: make lint
 

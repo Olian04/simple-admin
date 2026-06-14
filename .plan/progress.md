@@ -5,7 +5,7 @@ Status: `todo` · `in_progress` · `blocked` · `done`. Update date on every cha
 | Step | Title | Status | Note | Updated |
 |---|---|---|---|---|
 | 0 | Set up `.plan/` dir | done | README/PLAN/decisions/progress/todo created + committed | 2026-06-14 |
-| 1 | Tooling (templ, deps, CI) | todo | | 2026-06-14 |
+| 1 | Tooling (templ, deps, CI) | done | templ tool v0.3.1020 + Makefile/gitignore/CI; runtime deps deferred to consumers | 2026-06-14 |
 | 2 | Reference backend (separate PocketBase module) | todo | | 2026-06-14 |
 | 3 | Config (backends, manual\|discovery) | todo | | 2026-06-14 |
 | 4 | Domain canonical model | todo | | 2026-06-14 |
@@ -19,4 +19,4 @@ Status: `todo` · `in_progress` · `blocked` · `done`. Update date on every cha
 | 12 | Custom fields + built-in islands | todo | | 2026-06-14 |
 | 13 | Polish (CSP, docs, README mermaid) | todo | | 2026-06-14 |
 
-Current focus: **Step 1**.
+Current focus: **Step 2**.

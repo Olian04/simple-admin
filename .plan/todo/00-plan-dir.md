@@ -17,7 +17,7 @@ Status: `done`
 
 ## Verification
 
-- `.plan/` present at repo root, committed; `progress.md` lists all 14 steps.
+- `.plan/` present at repo root, committed (`6bcf8de`); `progress.md` lists all 14 steps.
 
 ## Follow-ups
 
