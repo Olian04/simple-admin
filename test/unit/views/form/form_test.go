@@ -80,6 +80,35 @@ func TestResolveArgsStaticAndJSONPath(t *testing.T) {
 	}
 }
 
+func TestFieldContextSiblingQueries(t *testing.T) {
+	ctx := form.FieldContext{
+		Field: resource.Field{Name: "title", Kind: resource.KindString},
+		Siblings: []form.Sibling{
+			{Field: resource.Field{Name: "featured", Kind: resource.KindBoolean}, Value: "true"},
+			{Field: resource.Field{Name: "authorId", Kind: resource.KindString}, Value: "abc"},
+			{Field: resource.Field{Name: "status", Kind: resource.KindEnum}, Value: "draft"},
+		},
+	}
+	if got, ok := ctx.Sibling("featured"); !ok || got.Value != "true" {
+		t.Fatalf("Sibling(featured) wrong: %+v ok=%v", got, ok)
+	}
+	if !ctx.HasSibling("status") || ctx.HasSibling("nope") {
+		t.Fatal("HasSibling wrong")
+	}
+	if ctx.SiblingValue("authorId") != "abc" || ctx.SiblingValue("nope") != "" {
+		t.Fatal("SiblingValue wrong")
+	}
+	if b := ctx.BoolSiblings(); len(b) != 1 || b[0].Field.Name != "featured" {
+		t.Fatalf("BoolSiblings wrong: %+v", b)
+	}
+	if ids := ctx.IDSiblings(); len(ids) != 1 || ids[0].Field.Name != "authorId" {
+		t.Fatalf("IDSiblings wrong: %+v", ids)
+	}
+	if e := ctx.SiblingsOfKind("enum"); len(e) != 1 || e[0].Field.Name != "status" {
+		t.Fatalf("SiblingsOfKind(enum) wrong: %+v", e)
+	}
+}
+
 func TestWidgetRegistryBuiltins(t *testing.T) {
 	reg, err := form.NewWidgetRegistry("", nil)
 	if err != nil {

@@ -189,7 +189,7 @@ func (h *UIHandler) buildFormView(d resource.ResourceDescriptor, mode, id string
 		} else {
 			fv.Value = views.ValueString(f.Value)
 		}
-		if c, ok := h.renderWidget(d, f, data, known); ok {
+		if c, ok := h.renderWidget(d, f, ff, data, known); ok {
 			fv.Widget = c
 		}
 		fields = append(fields, fv)
@@ -267,7 +267,7 @@ func (h *UIHandler) resourceNames(backendID string) []string {
 // renderWidget resolves a field's custom widget (explicit config or convention
 // auto-select) and renders it to HTML. Returns ok=false to fall back to the
 // built-in input.
-func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField, data resource.Record, known []string) (templ.Component, bool) {
+func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField, allFields []form.FormField, data resource.Record, known []string) (templ.Component, bool) {
 	if h.widgets == nil {
 		return nil, false
 	}
@@ -320,7 +320,22 @@ func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField
 		Required:   f.Required,
 		Args:       args,
 		OptionsURL: optionsURL,
+		Field:      f.Field,
+		Siblings:   siblingsOf(allFields, f.Name),
 	})
+}
+
+// siblingsOf builds the sibling view (every editable field except the current
+// one) handed to a widget via FieldContext.
+func siblingsOf(all []form.FormField, exclude string) []form.Sibling {
+	out := make([]form.Sibling, 0, len(all))
+	for _, o := range all {
+		if o.Name == exclude {
+			continue
+		}
+		out = append(out, form.Sibling{Field: o.Field, Value: views.ValueString(o.Value)})
+	}
+	return out
 }
 
 func modeFromFormat(format string) string {

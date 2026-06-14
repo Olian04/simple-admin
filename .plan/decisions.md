@@ -78,4 +78,8 @@ Append-only. Newest at bottom. Each entry: decision · rationale · date.
 
 30. **CI/govulncheck:** bump Go toolchain to latest 1.26.x; if stdlib-only advisories persist (DB ahead of releases), make the govulncheck step report-only with a documented note rather than a red gate.
 
+31. **Widget field context standardized + enriched (`form.FieldContext`).** ONE value type passed to every widget — built-in Templ components AND user `html/template` files get the same data + their Args. Carries the field's full `resource.Field` metadata (`Field`) plus a queryable `Siblings` view (`Sibling`/`HasSibling`/`SiblingValue`/`SiblingsOfKind`/`BoolSiblings`/`IDSiblings`). Additive — existing flat fields (Name/Value/Arg/…) kept. — Lets a widget work on its own data and look up related fields (bool flags, ids) regardless of widget type.
+
+32. **PocketBase installer popup disabled** in example-backend (`ServeEvent.InstallerFunc = nil`); superuser via CLI if the dashboard is needed. — No browser setup page on `serve`.
+
 

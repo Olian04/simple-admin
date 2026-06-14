@@ -10,28 +10,6 @@ import (
 	"github.com/a-h/templ"
 )
 
-// FieldContext is the data passed to a field widget (built-in Templ component or
-// user-supplied html/template).
-type FieldContext struct {
-	Name       string
-	Label      string
-	InputID    string
-	Value      string
-	Required   bool
-	Args       map[string]any
-	OptionsURL string // relation widgets: admin endpoint returning [{value,label}]
-}
-
-// Arg returns a string arg with a fallback default.
-func (c FieldContext) Arg(key, def string) string {
-	if v, ok := c.Args[key]; ok {
-		if s, ok := v.(string); ok && s != "" {
-			return s
-		}
-	}
-	return def
-}
-
 // builtinWidgets maps a widget id to its Templ component. Only datetime +
 // relation are real; the rest fall back to a plain input/textarea stub.
 var builtinWidgets = map[string]func(FieldContext) templ.Component{
