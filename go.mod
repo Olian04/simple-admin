@@ -1,6 +1,6 @@
 module github.com/Olian04/simple-admin
 
-go 1.26
+go 1.26.1
 
 tool (
 	github.com/a-h/templ/cmd/templ

@@ -14,28 +14,31 @@ Portable schema-driven admin UI (Go + Templ + HTMX + Bulma) that drives CRUD on
 | `internal/config` | `backends:` config (manual\|discovery modes), union YAML types, validation. |
 | `internal/domain/resource` | Canonical `ResourceDescriptor`, ports (`Store`/`Validator`/`DescriptorSource`), `Service`, swappable `Registry`, JSON-Schema→`[]Field`. **Pure stdlib.** |
 | `internal/source/{manual,openapi}` | `DescriptorSource` impls → `[]ResourceDescriptor`. |
-| `internal/upstream` | CRUD HTTP client (`Store`) + ctx-credential apikey passthrough + typed errors. |
-| `internal/validation` | jsonschema/v6 → `resource.Validator` (field-keyed errors). |
-| `internal/ui/render` | columns/form models; widget `Registry` (embedded + user files), `ResolveArgs` (JSONPath), `AutoSelectWidget`. |
-| `internal/transport/http` | Router (`/ui/...` routes), handlers (ui/forms), Templ `views/`, credentials middleware, CSP. |
+| `internal/app/poller.go` | Background discovery poller; re-runs sources on `poll_interval` → `Registry.Replace`. |
+| `internal/backend` | CRUD HTTP client (`Store`) + ctx-credential apikey passthrough + typed errors. |
+| `internal/schemavalidation` | jsonschema/v6 → `resource.Validator` (field-keyed errors). |
+| `internal/views` | Templ page components (layout/list/detail/delete/credentials) + display helpers. |
+| `internal/views/form` | Form Templ + `FormView`/`FormFields`/`InputType`, `WidgetRegistry`, `ResolveArgs` (JSONPath), `AutoSelectWidget`, `FieldContext`, widget components. |
+| `internal/transport/http` | Router (`GET /`→`/ui`, `/ui/...` routes, favicon), handlers (ui/forms), credentials middleware, CSP. |
 | `web/` | `//go:embed static` (Bulma, HTMX, app.css, JS islands). |
-| `example-backend/` | **Separate Go module** (own go.mod): PocketBase reference backend + generated OpenAPI. |
+| `example-backend/` | **Separate Go module** (own go.mod): PocketBase reference backend + generated OpenAPI (installer disabled). |
 | `test/unit/...` | Unit tests mirror `internal/` paths. |
 
 ## Dependency direction
 
-`cmd` → `internal/app` → `{source, upstream, validation, ui/render, transport, config}`; `source/* → domain/resource`; **`domain/resource` imports only stdlib + own ports** (no OpenAPI/HTTP/config). OpenAPI lives under `internal/source/` so domain cannot reach it.
+`cmd` → `internal/app` → `{source, backend, schemavalidation, views, views/form, transport, config}`; `source/* → domain/resource`; `views/form` may import `views` (not vice-versa); **`domain/resource` imports only stdlib + own ports** (no OpenAPI/HTTP/config). OpenAPI lives under `internal/source/` so domain cannot reach it.
 
 ## Key conventions
 
 - Templ components compile to gitignored `*_templ.go`; `make build/lint/test/run` depend on `generate`. Run `go tool templ generate` after editing `.templ`.
 - Auth: no server secrets; per-backend creds in browser localStorage → `X-Sa-Credential` → passthrough. Manual auth scheme in YAML; discovery derives from `securitySchemes`. Only none/apikey active.
-- Custom-field widget files (`web/static/js/islands/*.js` + `internal/ui/render/templates/*.html.tmpl`) share the island contract (hidden control + re-mount on `htmx:afterSwap`).
-- List responses may be a bare array or `{items:[…]}` envelope (PocketBase). Update verb is per-resource (PUT|PATCH).
+- Field widgets: built-ins are Templ components in `internal/views/form` (`widget_*` via `widgets.templ`); user `template_file`s are runtime `html/template`. Both get the same `form.FieldContext` (value + Args + `Field` metadata + sibling queries). JS islands (`web/static/js/islands/*.js`) re-mount on `htmx:afterSwap`.
+- List responses may be a bare array or `{items:[…]}` envelope (PocketBase). Update verb is per-resource (PUT|PATCH). Sort uses PocketBase `-field` convention.
+- Graceful shutdown: `app.Run` returns nil on ctx cancel (exit 0).
 
 ## Commands (`make`)
 
-`generate`, `lint`, `test`, `test-race`, `run`, `build` (output `./dist/echo`).
+`generate`, `lint`, `test`, `test-race`, `run`, `build` (output `./dist/simple-admin`).
 
 ---
 

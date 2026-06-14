@@ -3,8 +3,8 @@ package resource
 import "sync"
 
 // Registry holds the live set of resource runtimes grouped by backend. It is
-// safe for concurrent use and atomically swappable, so a future discovery poll
-// can replace the whole set without blocking readers.
+// safe for concurrent use and atomically swappable, so the discovery poller can
+// replace the whole set without blocking readers.
 type Registry struct {
 	mu        sync.RWMutex
 	order     []*Runtime          // stable insertion order

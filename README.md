@@ -96,7 +96,7 @@ backends:
     base_url: http://localhost:8090
     discovery:                          # resources + auth scheme derived from the spec
       url: http://localhost:8090/openapi.json
-      poll_interval: 5m                 # polling loop is designed-for but not yet built
+      poll_interval: 5m                 # background poller refreshes resources at this interval
       auth: { type: apikey, in: header, name: X-API-Key, value: ${GATEWAY_DISCOVERY_KEY} }
 ```
 
@@ -116,7 +116,11 @@ The admin holds **no secrets**. Per-backend credentials live in the **browser's 
 
 ## Field widgets
 
-Form fields render via descriptive, library-agnostic widgets. Built-ins auto-select by convention (`date-time` → `datetime`; a `{resource}`/`{resource}Id` field referencing another resource on the same backend → `relation` picker), and any field can be overridden in config. Widget args are static or resolved from the record via JSONPath. `datetime` + `relation` are implemented; `code`, `geo`, `markdown`, etc. are registered stubs. Operators can also point a field at a custom `html/template` file.
+Form fields render via descriptive, library-agnostic widgets (compiled Templ components). Built-ins auto-select by convention (`date-time` → `datetime`; a `{resource}`/`{resource}Id` field referencing another resource on the same backend → `relation` picker), and any field can be overridden in config. Widget args are static or resolved from the record via JSONPath.
+
+Implemented: `datetime`, `relation`, `color`, `json`, `tags`, plus `code` (Monaco) and `markdown` (EasyMDE) which load from the configured `ui.*_cdn`. `geo`, `richtext`, `file`, etc. are registered stubs. Operators can also point a field at a custom `html/template` file.
+
+**Widget data contract:** every widget — built-in Templ or user `html/template` — receives the same `FieldContext`: the field's value + args, its full schema metadata (`Field`), and a queryable view of sibling fields (`Sibling`, `SiblingValue`, `BoolSiblings`, `IDSiblings`, `SiblingsOfKind`) so a widget can react to related fields (flags, foreign keys).
 
 ## Development
 
@@ -138,10 +142,12 @@ See [`.plan/`](.plan/) for the implementation plan, decision log, and per-step p
 | `internal/config` | YAML config (`backends:` manual/discovery), defaults, validation. |
 | `internal/domain/resource` | Canonical model (`ResourceDescriptor`), ports (`Store`/`Validator`/`DescriptorSource`), registry. Pure stdlib. |
 | `internal/source/{manual,openapi}` | Produce descriptors from config / OpenAPI specs. |
-| `internal/upstream` | Outbound CRUD client + auth passthrough. |
-| `internal/validation` | JSON Schema validation → field-keyed errors. |
-| `internal/ui/render` | Schema → columns/form models; widget registry + args + auto-select. |
-| `internal/transport/http` | Router, handlers, Templ views, credentials middleware, CSP. |
-| `web/` | Embedded static assets (Bulma, HTMX, app.css, islands). |
+| `internal/app/poller.go` | Background discovery poller (refreshes the registry on `poll_interval`). |
+| `internal/backend` | Outbound CRUD client + auth passthrough. |
+| `internal/schemavalidation` | JSON Schema validation → field-keyed errors. |
+| `internal/views` | Templ page components (layout/list/detail/delete/credentials) + display helpers. |
+| `internal/views/form` | Form rendering: form Templ, field model, widget registry, args, auto-select, widget components. |
+| `internal/transport/http` | Router (`GET /` → `/ui`), handlers, credentials middleware, CSP. |
+| `web/` | Embedded static assets (Bulma, HTMX, app.css, JS islands). |
 | `example-backend/` | **Separate module**: PocketBase reference backend + generated OpenAPI. |
 | `deploy/` | docker-compose local stack. |
