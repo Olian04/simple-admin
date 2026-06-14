@@ -28,6 +28,8 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	// Admin UI.
 	ui := handlers.NewUIHandler(resources)
 	mux.Handle("GET /ui", stdhttp.HandlerFunc(ui.Index))
+	mux.Handle("GET /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.List))
+	mux.Handle("GET /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Detail))
 
 	return middleware(mux, registry)
 }

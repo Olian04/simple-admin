@@ -1,0 +1,86 @@
+package views
+
+// List renders a resource table. Row "View" links go to the detail page.
+templ List(vm ListView) {
+	<section class="section">
+		<div class="level">
+			<div class="level-left">
+				<h1 class="title">{ vm.Label }</h1>
+			</div>
+			if vm.CanCreate {
+				<div class="level-right">
+					<a class="button is-primary" href={ uiURL(vm.Backend.ID, vm.Name, "new") }>New</a>
+				</div>
+			}
+		</div>
+		<table class="table is-fullwidth is-striped is-hoverable">
+			<thead>
+				<tr>
+					for _, col := range vm.Columns {
+						<th>{ col.Label }</th>
+					}
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				if len(vm.Rows) == 0 {
+					<tr><td colspan={ colspan(len(vm.Columns) + 1) }>No records.</td></tr>
+				}
+				for _, row := range vm.Rows {
+					<tr>
+						for _, cell := range row.Cells {
+							<td>{ cell }</td>
+						}
+						<td>
+							<a href={ uiURL(vm.Backend.ID, vm.Name, row.ID) }>View</a>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</section>
+}
+
+// Detail renders one record's fields.
+templ Detail(vm DetailView) {
+	<section class="section">
+		<div class="level">
+			<div class="level-left">
+				<h1 class="title">{ vm.Label }</h1>
+			</div>
+			<div class="level-right buttons">
+				<a class="button" href={ uiURL(vm.Backend.ID, vm.Name, "") }>Back</a>
+				if vm.CanEdit {
+					<a class="button is-link" href={ uiURL(vm.Backend.ID, vm.Name, vm.ID, "edit") }>Edit</a>
+				}
+				if vm.CanDelete {
+					<a
+						class="button is-danger"
+						hx-get={ uiPath(vm.Backend.ID, vm.Name, vm.ID, "delete") }
+						hx-target="#sa-modal"
+						hx-swap="innerHTML"
+					>Delete</a>
+				}
+			</div>
+		</div>
+		<table class="table is-fullwidth">
+			<tbody>
+				for _, p := range vm.Pairs {
+					<tr>
+						<th style="width: 12rem;">{ p.Label }</th>
+						<td>{ p.Value }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+		<div id="sa-modal"></div>
+	</section>
+}
+
+// Error renders an error message in the main pane.
+templ Error(vm ErrorView) {
+	<section class="section">
+		<h1 class="title">{ vm.Title }</h1>
+		<div class="notification is-danger is-light">{ vm.Message }</div>
+	</section>
+}

@@ -28,3 +28,48 @@ type PageData struct {
 	Groups  []SidebarGroup
 	Content templ.Component
 }
+
+// Column is a list-view table column header.
+type Column struct {
+	Name  string
+	Label string
+}
+
+// ListRow is one pre-rendered table row.
+type ListRow struct {
+	ID    string
+	Cells []string
+}
+
+// ListView is the data for a resource list/table screen.
+type ListView struct {
+	Backend   resource.Backend
+	Name      string
+	Label     string
+	Columns   []Column
+	Rows      []ListRow
+	CanCreate bool
+}
+
+// DetailPair is one field label/value in the detail view.
+type DetailPair struct {
+	Label string
+	Value string
+}
+
+// DetailView is the data for a single-record detail screen.
+type DetailView struct {
+	Backend   resource.Backend
+	Name      string
+	Label     string
+	ID        string
+	Pairs     []DetailPair
+	CanEdit   bool
+	CanDelete bool
+}
+
+// ErrorView renders an error message in the main pane.
+type ErrorView struct {
+	Title   string
+	Message string
+}
