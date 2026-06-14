@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Post",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "id": { "type": "string", "readOnly": true },
+    "title": { "type": "string", "maxLength": 200 },
+    "body": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "published", "archived"] },
+    "rating": { "type": "number" },
+    "featured": { "type": "boolean" },
+    "author": { "type": "string" },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "created": { "type": "string", "format": "date-time", "readOnly": true },
+    "updated": { "type": "string", "format": "date-time", "readOnly": true }
+  }
+}

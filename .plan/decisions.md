@@ -44,3 +44,16 @@ Append-only. Newest at bottom. Each entry: decision · rationale · date.
 
 17. **PocketBase pinned v0.39.3**, CGO-free (modernc sqlite) → static Docker builds with `CGO_ENABLED=0`.
 
+---
+
+## 2026-06-14 — Step 5 (descriptor sources)
+
+18. **JSON-Schema → `[]Field` normalizer lives in `domain/resource` (`schema.go`), not split across sources/ui.** Pure `encoding/json`; preserves property declaration order via a token-stream pass. Both `source/manual` and `source/openapi` call it; `ui/render` consumes the resulting `Schema.Fields`. — Avoids duplicating the schema-walk; keeps domain the single owner of schema→field structure.
+
+19. **MVP happy-path = manual mode against PocketBase.** A committed `configs/schemas/post.json` + `update_verb: PATCH` drives the real end-to-end (steps 8–11). Generic OpenAPI resource-discovery (`source/openapi`) is the secondary path, tested against a spec fixture. — Generic discovery from arbitrary specs is brittle; don't gate the MVP on it.
+
+20. **Manual mode capabilities default to full CRUD**, with `update_verb` (PUT|PATCH, default PUT) configurable per resource. — Manual config has no per-verb info; full CRUD is the sensible default and the verb override handles PATCH-only backends like PocketBase.
+
+21. **`source/openapi` uses a focused `encoding/json` parser, NOT `pb33f/libopenapi` (for now).** Supersedes decision 3's lib choice for the MVP. Our reference spec is JSON with local component `$ref`s; a small parser (resolve `#/components/schemas/*`, pair collection/item paths, derive capabilities + auth scheme from `securitySchemes`) is robust and keeps the module lean. — Revisit libopenapi if we need YAML specs, OpenAPI 3.1 nuances, or remote `$ref`s. Discovery polling is still deferred; this is the one-shot parse.
+
+

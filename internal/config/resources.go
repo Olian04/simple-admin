@@ -32,6 +32,7 @@ type ResourceSection struct {
 	Schema         SchemaSource             `yaml:"schema"`
 	Paths          ResourcePaths            `yaml:"paths"`
 	IDField        string                   `yaml:"id_field,omitempty"`
+	UpdateVerb     string                   `yaml:"update_verb,omitempty"` // PUT|PATCH (default PUT)
 	FieldTemplates map[string]FieldTemplate `yaml:"field_templates,omitempty"`
 }
 
@@ -213,6 +214,9 @@ func (r ResourceSection) WithDefaults() ResourceSection {
 	if r.IDField == "" {
 		r.IDField = DefaultIDField
 	}
+	if r.UpdateVerb == "" {
+		r.UpdateVerb = DefaultUpdateVerb
+	}
 	return r
 }
 
@@ -228,6 +232,9 @@ func (r ResourceSection) Validate(backendID string) error {
 	}
 	if !strings.Contains(r.Paths.Item, "{id}") {
 		return fmt.Errorf("backend %q resource %q: paths.item must contain {id}", backendID, r.Name)
+	}
+	if r.UpdateVerb != "PUT" && r.UpdateVerb != "PATCH" {
+		return fmt.Errorf("backend %q resource %q: update_verb must be PUT or PATCH", backendID, r.Name)
 	}
 	for field, ft := range r.FieldTemplates {
 		if ft.Template == "" && ft.TemplateFile == "" {

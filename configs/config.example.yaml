@@ -40,6 +40,7 @@ backends:
           collection: '/api/collections/posts/records'
           item: '/api/collections/posts/records/{id}'
         id_field: 'id'
+        update_verb: 'PATCH'              # PocketBase uses PATCH for updates
         field_templates:                # optional per-field widget overrides
           body: 'code'                  # shorthand built-in id
           status:

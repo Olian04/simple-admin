@@ -11,6 +11,7 @@ const (
 	DefaultAuthType     = "none"
 	DefaultIDField      = "id"
 	DefaultPollInterval = "5m"
+	DefaultUpdateVerb   = "PUT"
 )
 
 const DefaultMetricsEnabled = true
