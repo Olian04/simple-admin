@@ -10,11 +10,11 @@ import (
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	"github.com/Olian04/simple-admin/internal/transport/http/handlers"
 	"github.com/Olian04/simple-admin/internal/backend"
-	"github.com/Olian04/simple-admin/internal/ui/render"
+	"github.com/Olian04/simple-admin/internal/views/form"
 	"github.com/Olian04/simple-admin/web"
 )
 
-func Router(registry *metrics.Registry, resources *resource.Registry, widgets *render.Registry) stdhttp.Handler {
+func Router(registry *metrics.Registry, resources *resource.Registry, widgets *form.WidgetRegistry) stdhttp.Handler {
 	mux := stdhttp.NewServeMux()
 	mux.Handle("GET /healthz", stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
 		w.WriteHeader(stdhttp.StatusNoContent)

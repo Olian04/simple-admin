@@ -7,19 +7,19 @@ import (
 
 	"github.com/a-h/templ"
 
-	"github.com/Olian04/simple-admin/internal/domain/resource"
-	"github.com/Olian04/simple-admin/internal/transport/http/views"
-	"github.com/Olian04/simple-admin/internal/ui/render"
 	"github.com/Olian04/simple-admin/internal/backend"
+	"github.com/Olian04/simple-admin/internal/domain/resource"
+	"github.com/Olian04/simple-admin/internal/views"
+	"github.com/Olian04/simple-admin/internal/views/form"
 )
 
 // UIHandler renders the admin UI screens from the resource registry.
 type UIHandler struct {
 	registry *resource.Registry
-	widgets  *render.Registry
+	widgets  *form.WidgetRegistry
 }
 
-func NewUIHandler(registry *resource.Registry, widgets *render.Registry) *UIHandler {
+func NewUIHandler(registry *resource.Registry, widgets *form.WidgetRegistry) *UIHandler {
 	return &UIHandler{registry: registry, widgets: widgets}
 }
 
@@ -117,10 +117,10 @@ func (h *UIHandler) Options(w http.ResponseWriter, r *http.Request) {
 	labelField := firstStringField(rt.Descriptor)
 	out := make([]map[string]string, 0, len(res.Items))
 	for _, rec := range res.Items {
-		id := render.DisplayValue(rec[rt.Descriptor.IDField])
+		id := views.DisplayValue(rec[rt.Descriptor.IDField])
 		label := id
 		if labelField != "" {
-			if v := render.DisplayValue(rec[labelField]); v != "" {
+			if v := views.DisplayValue(rec[labelField]); v != "" {
 				label = v
 			}
 		}
@@ -167,24 +167,20 @@ func (h *UIHandler) renderStatus(w http.ResponseWriter, r *http.Request, status 
 }
 
 func buildListView(d resource.ResourceDescriptor, items []resource.Record) views.ListView {
-	cols := render.Columns(d.Schema.Fields)
-	vcols := make([]views.Column, len(cols))
-	for i, c := range cols {
-		vcols[i] = views.Column{Name: c.Name, Label: c.Label}
-	}
+	cols := views.Columns(d.Schema.Fields)
 	rows := make([]views.ListRow, 0, len(items))
 	for _, rec := range items {
 		cells := make([]string, len(cols))
 		for i, c := range cols {
-			cells[i] = render.Cell(rec, c)
+			cells[i] = views.Cell(rec, c)
 		}
-		rows = append(rows, views.ListRow{ID: render.DisplayValue(rec[d.IDField]), Cells: cells})
+		rows = append(rows, views.ListRow{ID: views.DisplayValue(rec[d.IDField]), Cells: cells})
 	}
 	return views.ListView{
 		Backend:   d.Backend,
 		Name:      d.Name,
 		Label:     d.Label,
-		Columns:   vcols,
+		Columns:   cols,
 		Rows:      rows,
 		CanCreate: d.Capabilities.Create,
 	}
@@ -193,7 +189,7 @@ func buildListView(d resource.ResourceDescriptor, items []resource.Record) views
 func buildDetailView(d resource.ResourceDescriptor, id string, rec resource.Record) views.DetailView {
 	pairs := make([]views.DetailPair, 0, len(d.Schema.Fields))
 	for _, f := range d.Schema.Fields {
-		pairs = append(pairs, views.DetailPair{Label: f.Label, Value: render.DisplayValue(rec[f.Name])})
+		pairs = append(pairs, views.DetailPair{Label: f.Label, Value: views.DisplayValue(rec[f.Name])})
 	}
 	return views.DetailView{
 		Backend:   d.Backend,

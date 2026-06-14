@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Olian04/simple-admin/internal/domain/resource"
-	"github.com/Olian04/simple-admin/internal/transport/http/views"
-	"github.com/Olian04/simple-admin/internal/ui/render"
 	"github.com/Olian04/simple-admin/internal/backend"
+	"github.com/Olian04/simple-admin/internal/domain/resource"
+	"github.com/Olian04/simple-admin/internal/views"
+	"github.com/Olian04/simple-admin/internal/views/form"
 )
 
 // NewForm renders an empty create form.
@@ -26,7 +26,7 @@ func (h *UIHandler) NewForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vm := h.buildFormView(rt.Descriptor, "create", "", nil, nil)
-	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, views.Form(vm))
+	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, form.Form(vm))
 	h.render(w, r, views.Page(data))
 }
 
@@ -51,7 +51,7 @@ func (h *UIHandler) EditForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vm := h.buildFormView(rt.Descriptor, "edit", id, rec, nil)
-	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, views.Form(vm))
+	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, form.Form(vm))
 	h.render(w, r, views.Page(data))
 }
 
@@ -101,7 +101,7 @@ func (h *UIHandler) handleWriteError(w http.ResponseWriter, r *http.Request, d r
 	if errors.As(err, &verr) {
 		vm := h.buildFormView(d, mode, id, rec, verr.Fields)
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		h.render(w, r, views.FormBody(vm))
+		h.render(w, r, form.FormBody(vm))
 		return
 	}
 	h.formError(w, r, d, mode, id, rec, err)
@@ -111,12 +111,12 @@ func (h *UIHandler) formError(w http.ResponseWriter, r *http.Request, d resource
 	vm := h.buildFormView(d, mode, id, rec, nil)
 	vm.FormError = err.Error()
 	w.WriteHeader(http.StatusBadGateway)
-	h.render(w, r, views.FormBody(vm))
+	h.render(w, r, form.FormBody(vm))
 }
 
 func (h *UIHandler) redirectToRecord(w http.ResponseWriter, d resource.ResourceDescriptor, rec resource.Record) {
 	target := "/ui/" + d.Backend.ID + "/" + d.Name
-	if id := render.DisplayValue(rec[d.IDField]); id != "" {
+	if id := views.DisplayValue(rec[d.IDField]); id != "" {
 		target += "/" + id
 	}
 	w.Header().Set("HX-Redirect", target)
@@ -169,16 +169,16 @@ func parseForm(r *http.Request, d resource.ResourceDescriptor) (resource.Record,
 	return rec, nil
 }
 
-func (h *UIHandler) buildFormView(d resource.ResourceDescriptor, mode, id string, data resource.Record, errs map[string]string) views.FormView {
+func (h *UIHandler) buildFormView(d resource.ResourceDescriptor, mode, id string, data resource.Record, errs map[string]string) form.FormView {
 	known := h.resourceNames(d.Backend.ID)
-	ff := render.FormFields(d.Schema.Fields, data, errs)
-	fields := make([]views.FormFieldView, 0, len(ff))
+	ff := form.FormFields(d.Schema.Fields, data, errs)
+	fields := make([]form.FormFieldView, 0, len(ff))
 	for _, f := range ff {
-		fv := views.FormFieldView{
+		fv := form.FormFieldView{
 			Name:      f.Name,
 			Label:     f.Label,
 			Kind:      string(f.Kind),
-			InputType: render.InputType(f.Field),
+			InputType: form.InputType(f.Field),
 			Required:  f.Required,
 			Error:     f.Error,
 			Enum:      f.Enum,
@@ -186,7 +186,7 @@ func (h *UIHandler) buildFormView(d resource.ResourceDescriptor, mode, id string
 		if f.Kind == resource.KindBoolean {
 			fv.Checked = isTruthy(f.Value)
 		} else {
-			fv.Value = render.ValueString(f.Value)
+			fv.Value = views.ValueString(f.Value)
 		}
 		if html, ok := h.renderWidget(d, f, data, known); ok {
 			fv.CustomHTML = html
@@ -202,7 +202,7 @@ func (h *UIHandler) buildFormView(d resource.ResourceDescriptor, mode, id string
 		cancel = action
 		usePut = true
 	}
-	return views.FormView{
+	return form.FormView{
 		Backend:   d.Backend,
 		Name:      d.Name,
 		Label:     d.Label,
@@ -266,7 +266,7 @@ func (h *UIHandler) resourceNames(backendID string) []string {
 // renderWidget resolves a field's custom widget (explicit config or convention
 // auto-select) and renders it to HTML. Returns ok=false to fall back to the
 // built-in input.
-func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f render.FormField, data resource.Record, known []string) (template.HTML, bool) {
+func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f form.FormField, data resource.Record, known []string) (template.HTML, bool) {
 	if h.widgets == nil {
 		return "", false
 	}
@@ -279,8 +279,8 @@ func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f render.FormFie
 		} else {
 			widgetID = f.Custom.TemplateID
 		}
-		args = render.ResolveArgs(f.Custom.Args, data)
-	} else if id, target, ok := render.AutoSelectWidget(f.Field, known); ok {
+		args = form.ResolveArgs(f.Custom.Args, data)
+	} else if id, target, ok := form.AutoSelectWidget(f.Field, known); ok {
 		widgetID = id
 		if id == "relation" && target != "" {
 			optionsURL = "/ui/" + d.Backend.ID + "/" + target + "/options"
@@ -307,15 +307,15 @@ func (h *UIHandler) renderWidget(d resource.ResourceDescriptor, f render.FormFie
 			if mode == "" {
 				mode = modeFromFormat(f.Format)
 			}
-			args["type"] = render.DatetimeInputType(mode)
+			args["type"] = form.DatetimeInputType(mode)
 		}
 	}
 
-	html, err := h.widgets.Render(widgetID, render.FieldContext{
+	html, err := h.widgets.Render(widgetID, form.FieldContext{
 		Name:       f.Name,
 		Label:      f.Label,
 		InputID:    "f_" + f.Name,
-		Value:      render.ValueString(f.Value),
+		Value:      views.ValueString(f.Value),
 		Required:   f.Required,
 		Args:       args,
 		OptionsURL: optionsURL,

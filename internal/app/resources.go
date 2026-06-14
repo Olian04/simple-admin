@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Olian04/simple-admin/internal/backend"
 	"github.com/Olian04/simple-admin/internal/config"
 	"github.com/Olian04/simple-admin/internal/domain/resource"
+	"github.com/Olian04/simple-admin/internal/schemavalidation"
 	"github.com/Olian04/simple-admin/internal/source/manual"
 	"github.com/Olian04/simple-admin/internal/source/openapi"
-	"github.com/Olian04/simple-admin/internal/ui/render"
-	"github.com/Olian04/simple-admin/internal/backend"
-	"github.com/Olian04/simple-admin/internal/schemavalidation"
+	"github.com/Olian04/simple-admin/internal/views/form"
 )
 
 // buildRegistry runs the descriptor sources (manual + discovery) and returns a
 // populated registry. configDir resolves relative manual schema paths. It fails
 // fast if any configured source cannot load.
 //
-// Each descriptor becomes a live Runtime: a backend.Client (Store) plus the
-// descriptor's Service. The Validator is wired in a later step.
+// Each descriptor becomes a live Runtime: a backend.Client (Store), a compiled
+// JSON Schema validator, and the descriptor's Service.
 func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*resource.Registry, error) {
 	sources := []resource.DescriptorSource{
 		manual.New(cfg.Backends, configDir),
@@ -53,7 +53,7 @@ func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*r
 // buildWidgets builds the field-widget registry: embedded built-ins plus any
 // user-supplied template_file widgets referenced in config (resolved against
 // configDir). Fails fast on parse errors.
-func buildWidgets(cfg config.Config, configDir string) (*render.Registry, error) {
+func buildWidgets(cfg config.Config, configDir string) (*form.WidgetRegistry, error) {
 	var userFiles []string
 	seen := map[string]bool{}
 	for _, b := range cfg.Backends {
@@ -66,5 +66,5 @@ func buildWidgets(cfg config.Config, configDir string) (*render.Registry, error)
 			}
 		}
 	}
-	return render.NewRegistry(configDir, userFiles)
+	return form.NewWidgetRegistry(configDir, userFiles)
 }

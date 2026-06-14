@@ -1,4 +1,4 @@
-package render
+package form
 
 import (
 	"bytes"
@@ -35,17 +35,17 @@ func (c FieldContext) Arg(key, def string) string {
 	return def
 }
 
-// Registry holds built-in and user-supplied field-widget templates.
-type Registry struct {
+// WidgetRegistry holds built-in and user-supplied field-widget templates.
+type WidgetRegistry struct {
 	templates map[string]*template.Template
 }
 
-// NewRegistry parses the embedded built-in widgets plus any user-supplied
+// NewWidgetRegistry parses the embedded built-in widgets plus any user-supplied
 // template files. Each user file is keyed by the exact path string from config
 // (resolved against baseDir when relative), so a field's Custom.TemplateFile is
 // its widget id. Fails fast on parse errors.
-func NewRegistry(baseDir string, userFiles []string) (*Registry, error) {
-	reg := &Registry{templates: map[string]*template.Template{}}
+func NewWidgetRegistry(baseDir string, userFiles []string) (*WidgetRegistry, error) {
+	reg := &WidgetRegistry{templates: map[string]*template.Template{}}
 
 	entries, err := builtinFS.ReadDir("templates")
 	if err != nil {
@@ -85,7 +85,7 @@ func NewRegistry(baseDir string, userFiles []string) (*Registry, error) {
 }
 
 // Has reports whether a widget id is registered.
-func (r *Registry) Has(id string) bool {
+func (r *WidgetRegistry) Has(id string) bool {
 	_, ok := r.templates[id]
 	return ok
 }
@@ -93,7 +93,7 @@ func (r *Registry) Has(id string) bool {
 // Render executes a widget template and returns its HTML. Record data passed in
 // the context is contextually auto-escaped by html/template; only the operator-
 // authored template markup is trusted.
-func (r *Registry) Render(id string, ctx FieldContext) (template.HTML, error) {
+func (r *WidgetRegistry) Render(id string, ctx FieldContext) (template.HTML, error) {
 	t, ok := r.templates[id]
 	if !ok {
 		return "", fmt.Errorf("unknown field widget %q", id)

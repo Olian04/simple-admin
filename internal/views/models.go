@@ -3,8 +3,6 @@
 package views
 
 import (
-	"html/template"
-
 	"github.com/a-h/templ"
 
 	"github.com/Olian04/simple-admin/internal/domain/resource"
@@ -76,20 +74,6 @@ type ErrorView struct {
 	Message string
 }
 
-// FormFieldView is one input in a create/edit form.
-type FormFieldView struct {
-	Name       string
-	Label      string
-	Kind       string // string|number|integer|boolean|enum|array|object
-	InputType  string // HTML input type for text-ish kinds
-	Value      string
-	Checked    bool // for boolean
-	Enum       []string
-	Required   bool
-	Error      string
-	CustomHTML template.HTML // pre-rendered custom widget; when set, overrides the kind switch
-}
-
 // CredBackend describes a backend's auth requirement on the credentials page.
 type CredBackend struct {
 	ID        string
@@ -112,18 +96,4 @@ type DeleteView struct {
 	Label   string
 	ID      string
 	Error   string
-}
-
-// FormView is the data for a create/edit form.
-type FormView struct {
-	Backend   resource.Backend
-	Name      string
-	Label     string
-	Mode      string // create|edit
-	ID        string
-	Action    string // admin route the form submits to
-	UsePut    bool   // edit submits via hx-put; create via hx-post
-	CancelURL string
-	FormError string // non-field-level error
-	Fields    []FormFieldView
 }
