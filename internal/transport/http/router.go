@@ -10,11 +10,12 @@ import (
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	"github.com/Olian04/simple-admin/internal/transport/http/handlers"
 	"github.com/Olian04/simple-admin/internal/backend"
+	"github.com/Olian04/simple-admin/internal/config"
 	"github.com/Olian04/simple-admin/internal/views/form"
 	"github.com/Olian04/simple-admin/web"
 )
 
-func Router(registry *metrics.Registry, resources *resource.Registry, widgets *form.WidgetRegistry) stdhttp.Handler {
+func Router(registry *metrics.Registry, resources *resource.Registry, widgets *form.WidgetRegistry, ui config.UISection) stdhttp.Handler {
 	mux := stdhttp.NewServeMux()
 	mux.Handle("GET /healthz", stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
 		w.WriteHeader(stdhttp.StatusNoContent)
@@ -34,18 +35,18 @@ func Router(registry *metrics.Registry, resources *resource.Registry, widgets *f
 	mux.Handle("GET /static/", stdhttp.StripPrefix("/static/", stdhttp.FileServerFS(staticFS)))
 
 	// Admin UI.
-	ui := handlers.NewUIHandler(resources, widgets)
-	mux.Handle("GET /ui", stdhttp.HandlerFunc(ui.Index))
-	mux.Handle("GET /ui/credentials", stdhttp.HandlerFunc(ui.Credentials))
-	mux.Handle("GET /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.List))
-	mux.Handle("POST /ui/{backend}/{name}", stdhttp.HandlerFunc(ui.Create))
-	mux.Handle("GET /ui/{backend}/{name}/new", stdhttp.HandlerFunc(ui.NewForm))
-	mux.Handle("GET /ui/{backend}/{name}/options", stdhttp.HandlerFunc(ui.Options))
-	mux.Handle("GET /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Detail))
-	mux.Handle("GET /ui/{backend}/{name}/{id}/edit", stdhttp.HandlerFunc(ui.EditForm))
-	mux.Handle("PUT /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Update))
-	mux.Handle("GET /ui/{backend}/{name}/{id}/delete", stdhttp.HandlerFunc(ui.DeleteConfirm))
-	mux.Handle("DELETE /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Delete))
+	uiHandler := handlers.NewUIHandler(resources, widgets, ui)
+	mux.Handle("GET /ui", stdhttp.HandlerFunc(uiHandler.Index))
+	mux.Handle("GET /ui/credentials", stdhttp.HandlerFunc(uiHandler.Credentials))
+	mux.Handle("GET /ui/{backend}/{name}", stdhttp.HandlerFunc(uiHandler.List))
+	mux.Handle("POST /ui/{backend}/{name}", stdhttp.HandlerFunc(uiHandler.Create))
+	mux.Handle("GET /ui/{backend}/{name}/new", stdhttp.HandlerFunc(uiHandler.NewForm))
+	mux.Handle("GET /ui/{backend}/{name}/options", stdhttp.HandlerFunc(uiHandler.Options))
+	mux.Handle("GET /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(uiHandler.Detail))
+	mux.Handle("GET /ui/{backend}/{name}/{id}/edit", stdhttp.HandlerFunc(uiHandler.EditForm))
+	mux.Handle("PUT /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(uiHandler.Update))
+	mux.Handle("GET /ui/{backend}/{name}/{id}/delete", stdhttp.HandlerFunc(uiHandler.DeleteConfirm))
+	mux.Handle("DELETE /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(uiHandler.Delete))
 
 	return middleware(securityHeaders(withCredentials(mux)), registry)
 }

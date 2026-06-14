@@ -16,7 +16,7 @@ templ Page(data PageData) {
 			<script src="/static/js/islands/credentials.js" defer></script>
 			<script src="/static/js/islands/relation.js" defer></script>
 		</head>
-		<body>
+		<body data-monaco-cdn={ data.MonacoCDN } data-easymde-cdn={ data.EasyMDECDN }>
 			<div class="sa-shell">
 				<aside class="sa-sidebar">
 					@Sidebar(data)

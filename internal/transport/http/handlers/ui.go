@@ -8,6 +8,7 @@ import (
 	"github.com/a-h/templ"
 
 	"github.com/Olian04/simple-admin/internal/backend"
+	"github.com/Olian04/simple-admin/internal/config"
 	"github.com/Olian04/simple-admin/internal/domain/resource"
 	"github.com/Olian04/simple-admin/internal/views"
 	"github.com/Olian04/simple-admin/internal/views/form"
@@ -17,10 +18,11 @@ import (
 type UIHandler struct {
 	registry *resource.Registry
 	widgets  *form.WidgetRegistry
+	ui       config.UISection
 }
 
-func NewUIHandler(registry *resource.Registry, widgets *form.WidgetRegistry) *UIHandler {
-	return &UIHandler{registry: registry, widgets: widgets}
+func NewUIHandler(registry *resource.Registry, widgets *form.WidgetRegistry, ui config.UISection) *UIHandler {
+	return &UIHandler{registry: registry, widgets: widgets, ui: ui}
 }
 
 // Index redirects to the first resource, or renders the placeholder shell when
@@ -218,7 +220,13 @@ func (h *UIHandler) pageData(activeBackend, activeName string, content templ.Com
 		}
 		groups = append(groups, views.SidebarGroup{Backend: b, Resources: items})
 	}
-	return views.PageData{Title: "simple-admin", Groups: groups, Content: content}
+	return views.PageData{
+		Title:      "simple-admin",
+		Groups:     groups,
+		Content:    content,
+		MonacoCDN:  h.ui.MonacoCDN,
+		EasyMDECDN: h.ui.EasyMDECDN,
+	}
 }
 
 // render writes a templ component, logging render errors as a 500.

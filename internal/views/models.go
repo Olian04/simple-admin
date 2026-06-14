@@ -24,9 +24,11 @@ type SidebarGroup struct {
 
 // PageData is the data for the full-page shell.
 type PageData struct {
-	Title   string
-	Groups  []SidebarGroup
-	Content templ.Component
+	Title      string
+	Groups     []SidebarGroup
+	Content    templ.Component
+	MonacoCDN  string // widget CDN bases, exposed to islands via root data attributes
+	EasyMDECDN string
 }
 
 // Column is a list-view table column header.

@@ -9,6 +9,7 @@ type Config struct {
 	HTTP     HTTPSection      `yaml:"http,omitempty"`
 	Metrics  MetricsSection   `yaml:"metrics,omitempty"`
 	Logging  LoggingSection   `yaml:"logging,omitempty"`
+	UI       UISection        `yaml:"ui,omitempty"`
 	Backends []BackendSection `yaml:"backends,omitempty"`
 }
 
@@ -17,6 +18,7 @@ func (c Config) WithDefaults() Config {
 	c.HTTP = c.HTTP.WithDefaults()
 	c.Metrics = c.Metrics.WithDefaults()
 	c.Logging = c.Logging.WithDefaults()
+	c.UI = c.UI.WithDefaults()
 	backends := make([]BackendSection, len(c.Backends))
 	for i := range c.Backends {
 		backends[i] = c.Backends[i].WithDefaults()
@@ -36,6 +38,9 @@ func (c Config) Validate() error {
 		return err
 	}
 	if err := c.Logging.Validate(); err != nil {
+		return err
+	}
+	if err := c.UI.Validate(); err != nil {
 		return err
 	}
 	seen := map[string]bool{}

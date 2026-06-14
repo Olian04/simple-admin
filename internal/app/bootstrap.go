@@ -34,7 +34,7 @@ func Run(ctx context.Context, cfg config.Config, configDir string) error {
 		return fmt.Errorf("build widgets: %w", err)
 	}
 
-	handler := httptransport.Router(registry, resources, widgets)
+	handler := httptransport.Router(registry, resources, widgets, cfg.UI)
 
 	n := 1
 	metricsOn := cfg.MetricsEnabled()
