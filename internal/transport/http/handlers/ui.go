@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/a-h/templ"
 
@@ -43,15 +44,43 @@ func (h *UIHandler) List(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	res, err := rt.Service.List(r.Context(), resource.ListParams{})
+	params := h.listParams(r)
+	res, err := rt.Service.List(r.Context(), params)
 	if err != nil {
 		h.handleReadError(w, r, rt.Descriptor, err)
 		return
 	}
-	vm := buildListView(rt.Descriptor, res.Items)
+	vm := buildListView(rt.Descriptor, res, params)
+	if isHTMX(r) {
+		h.render(w, r, views.List(vm))
+		return
+	}
 	data := h.pageData(rt.Descriptor.Backend.ID, rt.Descriptor.Name, views.List(vm))
 	h.render(w, r, views.Page(data))
 }
+
+// listParams reads pagination/sort from the query, defaulting per ui config.
+func (h *UIHandler) listParams(r *http.Request) resource.ListParams {
+	q := r.URL.Query()
+	page := atoiDefault(q.Get("page"), 1)
+	if page < 1 {
+		page = 1
+	}
+	perPage := atoiDefault(q.Get("perPage"), h.ui.PageSize)
+	if perPage < 1 {
+		perPage = h.ui.PageSize
+	}
+	return resource.ListParams{Page: page, PerPage: perPage, Sort: q.Get("sort"), Desc: q.Get("desc") != ""}
+}
+
+func atoiDefault(s string, def int) int {
+	if n, err := strconv.Atoi(s); err == nil {
+		return n
+	}
+	return def
+}
+
+func isHTMX(r *http.Request) bool { return r.Header.Get("HX-Request") == "true" }
 
 // Detail renders a single record.
 func (h *UIHandler) Detail(w http.ResponseWriter, r *http.Request) {
@@ -168,23 +197,34 @@ func (h *UIHandler) renderStatus(w http.ResponseWriter, r *http.Request, status 
 	h.render(w, r, views.Page(data))
 }
 
-func buildListView(d resource.ResourceDescriptor, items []resource.Record) views.ListView {
+func buildListView(d resource.ResourceDescriptor, res resource.ListResult, params resource.ListParams) views.ListView {
 	cols := views.Columns(d.Schema.Fields)
-	rows := make([]views.ListRow, 0, len(items))
-	for _, rec := range items {
+	rows := make([]views.ListRow, 0, len(res.Items))
+	for _, rec := range res.Items {
 		cells := make([]string, len(cols))
 		for i, c := range cols {
 			cells[i] = views.Cell(rec, c)
 		}
 		rows = append(rows, views.ListRow{ID: views.DisplayValue(rec[d.IDField]), Cells: cells})
 	}
+
+	totalPages := 1
+	if res.TotalItems > 0 && params.PerPage > 0 {
+		totalPages = (res.TotalItems + params.PerPage - 1) / params.PerPage
+	}
 	return views.ListView{
-		Backend:   d.Backend,
-		Name:      d.Name,
-		Label:     d.Label,
-		Columns:   cols,
-		Rows:      rows,
-		CanCreate: d.Capabilities.Create,
+		Backend:    d.Backend,
+		Name:       d.Name,
+		Label:      d.Label,
+		Columns:    cols,
+		Rows:       rows,
+		CanCreate:  d.Capabilities.Create,
+		Page:       params.Page,
+		PerPage:    params.PerPage,
+		TotalItems: res.TotalItems,
+		TotalPages: totalPages,
+		Sort:       params.Sort,
+		Desc:       params.Desc,
 	}
 }
 

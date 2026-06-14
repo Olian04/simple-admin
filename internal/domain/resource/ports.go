@@ -13,6 +13,8 @@ type Record map[string]any
 type ListParams struct {
 	Page    int
 	PerPage int
+	Sort    string // field to sort by ("" = backend default)
+	Desc    bool   // descending when true
 }
 
 // ListResult is a page of records.

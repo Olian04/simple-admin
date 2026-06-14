@@ -35,8 +35,8 @@ Phase 1 (MVP) complete (steps 0–13 done).
 | p2-7 | Built-in widgets → templ | done | widgets.templ components + WidgetRegistry dispatch; html.tmpl deleted; verified | 2026-06-14 |
 | p2-8 | Config ui: section (CDN URLs, page size) | done | UISection + data attrs to layout; threaded handler/router/bootstrap | 2026-06-14 |
 | p2-9 | Discovery polling loop | done | assembleRuntimes + poller ticker + Registry.Replace; 2s smoke fires | 2026-06-14 |
-| p2-10 | Pagination + sort UI | in_progress | | 2026-06-14 |
-| p2-11 | Flash messages | todo | | 2026-06-14 |
+| p2-10 | Pagination + sort UI | done | ListParams sort + pagination/sortable headers + HTMX partial; verified | 2026-06-14 |
+| p2-11 | Flash messages | in_progress | | 2026-06-14 |
 | p2-12 | High-value widgets (color/json/tags/markdown/code) | todo | | 2026-06-14 |
 | p2-13 | Comments cleanup + docs + CI + .plan | todo | | 2026-06-14 |
 

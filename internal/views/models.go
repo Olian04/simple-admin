@@ -3,6 +3,9 @@
 package views
 
 import (
+	"net/url"
+	"strconv"
+
 	"github.com/a-h/templ"
 
 	"github.com/Olian04/simple-admin/internal/domain/resource"
@@ -45,12 +48,63 @@ type ListRow struct {
 
 // ListView is the data for a resource list/table screen.
 type ListView struct {
-	Backend   resource.Backend
-	Name      string
-	Label     string
-	Columns   []Column
-	Rows      []ListRow
-	CanCreate bool
+	Backend    resource.Backend
+	Name       string
+	Label      string
+	Columns    []Column
+	Rows       []ListRow
+	CanCreate  bool
+	Page       int
+	PerPage    int
+	TotalItems int
+	TotalPages int
+	Sort       string
+	Desc       bool
+}
+
+// BasePath is the list route for this resource.
+func (v ListView) BasePath() string { return "/ui/" + v.Backend.ID + "/" + v.Name }
+
+// SortURL returns the list URL sorted by col (toggling direction if already
+// sorted by it), reset to page 1.
+func (v ListView) SortURL(col string) templ.SafeURL {
+	desc := false
+	if v.Sort == col {
+		desc = !v.Desc
+	}
+	return v.pageURL(1, col, desc)
+}
+
+// SortIndicator is the ▲/▼ marker for a sorted column header (empty otherwise).
+func (v ListView) SortIndicator(col string) string {
+	if v.Sort != col {
+		return ""
+	}
+	if v.Desc {
+		return " ▼"
+	}
+	return " ▲"
+}
+
+// PageURL returns the list URL for a given page, preserving sort.
+func (v ListView) PageURL(page int) templ.SafeURL { return v.pageURL(page, v.Sort, v.Desc) }
+
+func (v ListView) HasPrev() bool { return v.Page > 1 }
+func (v ListView) HasNext() bool { return v.Page < v.TotalPages }
+func (v ListView) PrevPage() int { return v.Page - 1 }
+func (v ListView) NextPage() int { return v.Page + 1 }
+
+func (v ListView) pageURL(page int, sort string, desc bool) templ.SafeURL {
+	q := url.Values{}
+	q.Set("page", strconv.Itoa(page))
+	q.Set("perPage", strconv.Itoa(v.PerPage))
+	if sort != "" {
+		q.Set("sort", sort)
+		if desc {
+			q.Set("desc", "1")
+		}
+	}
+	return templ.SafeURL(v.BasePath() + "?" + q.Encode())
 }
 
 // DetailPair is one field label/value in the detail view.

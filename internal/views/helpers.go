@@ -26,6 +26,12 @@ func uiURL(parts ...string) templ.SafeURL {
 
 func colspan(n int) string { return strconv.Itoa(n) }
 
+// pageLabel summarizes the current page position.
+func pageLabel(page, totalPages, totalItems int) string {
+	return "Page " + strconv.Itoa(page) + " / " + strconv.Itoa(totalPages) +
+		" · " + strconv.Itoa(totalItems) + " items"
+}
+
 // schemeLabel describes a backend's auth scheme for the credentials page.
 func schemeLabel(b CredBackend) string {
 	switch b.AuthType {

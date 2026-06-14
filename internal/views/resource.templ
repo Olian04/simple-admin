@@ -17,7 +17,15 @@ templ List(vm ListView) {
 			<thead>
 				<tr>
 					for _, col := range vm.Columns {
-						<th>{ col.Label }</th>
+						<th>
+							<a
+								href={ vm.SortURL(col.Name) }
+								hx-get={ string(vm.SortURL(col.Name)) }
+								hx-target="#sa-main"
+								hx-swap="innerHTML"
+								hx-push-url="true"
+							>{ col.Label }{ vm.SortIndicator(col.Name) }</a>
+						</th>
 					}
 					<th></th>
 				</tr>
@@ -38,7 +46,33 @@ templ List(vm ListView) {
 				}
 			</tbody>
 		</table>
+		@Pagination(vm)
 	</section>
+}
+
+// Pagination renders prev/next + page info, swapping the main pane via HTMX.
+templ Pagination(vm ListView) {
+	if vm.TotalPages > 1 {
+		<nav class="pagination is-small" role="navigation" aria-label="pagination">
+			if vm.HasPrev() {
+				<a class="pagination-previous" href={ vm.PageURL(vm.PrevPage()) } hx-get={ string(vm.PageURL(vm.PrevPage())) } hx-target="#sa-main" hx-swap="innerHTML" hx-push-url="true">Previous</a>
+			} else {
+				<a class="pagination-previous" disabled>Previous</a>
+			}
+			if vm.HasNext() {
+				<a class="pagination-next" href={ vm.PageURL(vm.NextPage()) } hx-get={ string(vm.PageURL(vm.NextPage())) } hx-target="#sa-main" hx-swap="innerHTML" hx-push-url="true">Next</a>
+			} else {
+				<a class="pagination-next" disabled>Next</a>
+			}
+			<ul class="pagination-list">
+				<li>
+					<span class="pagination-link is-current">
+						{ pageLabel(vm.Page, vm.TotalPages, vm.TotalItems) }
+					</span>
+				</li>
+			</ul>
+		</nav>
+	}
 }
 
 // Detail renders one record's fields.

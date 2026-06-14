@@ -52,15 +52,23 @@ func (c *Client) itemURL(id string) string {
 // pagination envelope ({items:[...], totalItems, ...}).
 func (c *Client) List(ctx context.Context, params resource.ListParams) (resource.ListResult, error) {
 	u := c.collectionURL()
-	if params.Page > 0 || params.PerPage > 0 {
-		q := url.Values{}
-		if params.Page > 0 {
-			q.Set("page", strconv.Itoa(params.Page))
+	q := url.Values{}
+	if params.Page > 0 {
+		q.Set("page", strconv.Itoa(params.Page))
+	}
+	if params.PerPage > 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
+	}
+	if params.Sort != "" {
+		// PocketBase sort convention: "-field" for descending.
+		prefix := ""
+		if params.Desc {
+			prefix = "-"
 		}
-		if params.PerPage > 0 {
-			q.Set("perPage", strconv.Itoa(params.PerPage))
-		}
-		u += "?" + q.Encode()
+		q.Set("sort", prefix+params.Sort)
+	}
+	if enc := q.Encode(); enc != "" {
+		u += "?" + enc
 	}
 
 	body, err := c.do(ctx, http.MethodGet, u, nil)
