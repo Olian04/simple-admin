@@ -20,6 +20,19 @@ import (
 // Each descriptor becomes a live Runtime: a backend.Client (Store), a compiled
 // JSON Schema validator, and the descriptor's Service.
 func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*resource.Registry, error) {
+	runtimes, err := assembleRuntimes(ctx, cfg, configDir)
+	if err != nil {
+		return nil, err
+	}
+	reg := resource.NewRegistry()
+	reg.Replace(runtimes)
+	return reg, nil
+}
+
+// assembleRuntimes runs the descriptor sources and turns each descriptor into a
+// live Runtime (backend.Client Store + compiled validator + Service). It is
+// reused by the startup build and the discovery poller.
+func assembleRuntimes(ctx context.Context, cfg config.Config, configDir string) ([]*resource.Runtime, error) {
 	sources := []resource.DescriptorSource{
 		manual.New(cfg.Backends, configDir),
 		openapi.New(cfg.Backends),
@@ -44,10 +57,7 @@ func buildRegistry(ctx context.Context, cfg config.Config, configDir string) (*r
 		svc := &resource.Service{Descriptor: d, Store: backend.New(d), Validator: validator}
 		runtimes = append(runtimes, &resource.Runtime{Descriptor: d, Service: svc})
 	}
-
-	reg := resource.NewRegistry()
-	reg.Replace(runtimes)
-	return reg, nil
+	return runtimes, nil
 }
 
 // buildWidgets builds the field-widget registry: embedded built-ins plus any

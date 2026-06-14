@@ -28,6 +28,7 @@ func Run(ctx context.Context, cfg config.Config, configDir string) error {
 	if err != nil {
 		return fmt.Errorf("build resources: %w", err)
 	}
+	startDiscoveryPoller(ctx, cfg, configDir, resources)
 
 	widgets, err := buildWidgets(cfg, configDir)
 	if err != nil {
