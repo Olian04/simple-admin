@@ -390,3 +390,143 @@ To make work resumable across sessions/agents, a `.plan/` directory at the **rep
   - **Credentials/passthrough:** flip the reference backend to require an API key → unset credential prompts the operator; set it on `/ui/credentials` → stored in localStorage, injected via `htmx:configRequest`, forwarded upstream (assert the backend receives the header); wrong key → "credential rejected" prompt. Confirm the secret never appears in server logs.
   - Built-in islands (MVP): a `datetime` field mounts the picker and a `relation` field loads choices from another resource; both persist through submit and re-mount after an HTMX swap. **Auto-selection:** a `date-time` field gets `datetime` and a `{resource}Id` field gets `relation` with **no `field_templates` config**. A template arg sourced via `{ jsonpath: '$.x' }` resolves from the record; omitting an arg falls back to the derived default.
 - Unit tests: descriptor extraction from fixture spec, field derivation per kind/format, validator pass/fail with pointer→field mapping, credential extraction middleware, apikey injection, `{id}` path templating, upstream error mapping.
+
+
+---
+
+# ===== PHASE 2 (cleanup/refactor + features) =====
+
+
+# simple-admin â€” Cleanup/refactor + high-value features (Phase 2)
+
+> âš ï¸ **ALL AGENTS: use caveman communication mode at all times** on this project (terse; drop articles/filler; code & commits normal). On resume read [`.plan/README.md`](../../projects/simple-admin/.plan/README.md) â†’ `progress.md` â†’ step `todo/*.md` â†’ `decisions.md`.
+
+## Context
+
+The MVP (Phase 1, steps 0â€“13) is built and committed. This phase is a **cleanup/refactor + selected feature** pass driven by the user's review:
+
+- **Naming/structure confusion**: leftover `echo` scaffold still names the product; `upstream`/`validation` are generically named; `internal/ui/render` is a generic parent with a generic child and no actual views.
+- **Bugs/UX**: Ctrl+C exits with code 1 (should be graceful 0); no `GET /` (404 at root).
+- **Consistency**: built-in field widgets are runtime-parsed `*.html.tmpl`, unlike the rest of the UI (Templ).
+- **Promised work**: deferred features (discovery polling, pagination/sort, flash, rich widgets) and stale "later step" comments.
+
+**Goal:** a clean, consistently-named codebase with built-in widgets as Templ, graceful shutdown, a root redirect, and the high-value deferred features built. Low-value widgets and bearer/basic/oauth auth stay stubbed.
+
+## Decisions locked with the user (this phase)
+
+- **Scope**: refactors/fixes + high-value features (discovery polling, pagination/sort, flash, widgets: code/Monaco, markdown, tags, color, json). Remaining widgets + bearer/basic/oauth stay stubs.
+- **Routing**: **keep the `/ui` prefix**; add `GET /` â†’ `302 /ui` (and `GET /favicon.ico` â†’ 204).
+- **Naming**: remove the `echo` scaffold and rename the product `echo` â†’ `simple-admin`; rename `internal/upstream` â†’ `internal/backend`; rename `internal/validation` â†’ `internal/schemavalidation`; **keep `internal/source`** (distinct: descriptor origin).
+- **Packages**: delete `internal/ui/`; move views to a **top-level `internal/views`** with a **`internal/views/form`** subpackage (form rendering). Rename the widget `render.Registry` â†’ `form.WidgetRegistry`.
+- **Built-in widgets** â†’ Templ components (user-supplied `template_file`s stay runtime `html/template`).
+- **Widget JS**: CDN by default, overridable via a new `ui:` config section (airgap can self-host).
+- **CI**: bump Go toolchain to the latest 1.26.x patch to clear/triage `govulncheck`.
+
+## Existing patterns to reuse
+
+- Config sections: own file in `internal/config/`, struct + `WithDefaults()` + `Validate()`, aggregated in `config.go`; strict `KnownFields(true)` ([load.go](../../projects/simple-admin/internal/config/load.go)).
+- `resource.Registry` is already atomically swappable (`Replace`) â€” discovery polling reuses it directly ([registry.go](../../projects/simple-admin/internal/domain/resource/registry.go)).
+- `backend`(was upstream) `List` already takes `resource.ListParams{Page,PerPage}` â€” pagination extends it with sort.
+- Domreuse: `resource.ResourceDescriptor`, `Service`, ports unchanged. Domain stays pure.
+- `.plan/` resume contract: continue per-step tracking (progress/decisions/todo).
+
+---
+
+## Progress tracking â€” `.plan/` (standing rule for ALL plans in this repo)
+
+**Rule:** every plan/phase in this repo uses the committed `.plan/` resume contract the same way Phase 1 did â€” see [`.plan/README.md`](../../projects/simple-admin/.plan/README.md). This is mandatory for all future plans, not just this one.
+
+- **Step 0 (first thing):** add a Phase-2 section to `.plan/progress.md` (these 13 steps = `todo`), append the Phase-2 decisions to `.plan/decisions.md`, and create `.plan/todo/p2-NN-*.md` per step. Update `.plan/README.md` to state the standing rule. Commit.
+- **Per step:** before starting set the step `in_progress` in `progress.md` + open its `todo` file; on finish mark `done`, record the commit hash, run the step's verification. Append any new decision to `decisions.md`; keep `PLAN.md` canonical (copy this plan in as the Phase-2 spec, or extend the existing `PLAN.md`).
+- Status vocabulary unchanged: `todo Â· in_progress Â· blocked Â· done`.
+
+## Work plan (ordered, each step committable + verified)
+
+### Step 0 â€” `.plan/` Phase-2 setup
+Per the rule above: seed Phase-2 progress/decisions/todos, record the standing `.plan` rule in `.plan/README.md`, copy this plan into `.plan/PLAN.md` (or add a Phase-2 section), commit.
+
+### Step 1 â€” Graceful shutdown (exit 0 on Ctrl+C)
+- `internal/app/bootstrap.go`: in the `select`, when `ctx.Done()` fires return `nil` (not `ctx.Err()`); keep `errCh` errors. (Other context errors are not expected here.)
+- `cmd/simple-admin/main.go`: belt-and-suspenders â€” if `root.Run` returns `context.Canceled`, exit 0 (don't log error / `os.Exit(1)`).
+- Test: a unit/integration check that a canceled context returns nil from `Run`.
+
+### Step 2 â€” Root + favicon routes
+- `internal/transport/http/router.go`: `GET /` â†’ `http.Redirect(..., "/ui", 302)`; `GET /favicon.ico` â†’ 204.
+
+### Step 3 â€” Remove `echo` scaffold + rename product â†’ `simple-admin`
+- Delete `internal/domain/echo/`, `internal/transport/http/handlers/echo.go`, `test/unit/domain/echo/`, the `POST /echo` route, and `echo.NewService()` wiring in `bootstrap.go`. `Router(...)` drops the `svc echo.Service` param.
+- Rename product strings: `cmd/simple-admin/main.go` (`cli.Command.Name`/`Usage`, log lines), `internal/config/defaults.go` `DefaultMetricPrefix "echo"â†’"simple-admin"`, `configs/config.example.yaml` `metric_prefix`/`labels`, `Makefile` build output `dist/echo`â†’`dist/simple-admin`, `goreleaser/.goreleaser.yaml` binary name, README/AGENTS mentions.
+
+### Step 4 â€” Rename `internal/upstream` â†’ `internal/backend`
+- Move package; `upstream.Client`â†’`backend.Client`, `upstream.UpstreamError`â†’`backend.Error`, keep `ErrNotFound`/`ErrUnauthorized`, `WithCredential`/`CredentialFromContext`. Update importers (`app/resources.go`, `transport/http/router.go` `withCredentials`, handlers). Move `test/unit` accordingly.
+
+### Step 5 â€” Rename `internal/validation` â†’ `internal/schemavalidation`
+- Move package; `schemavalidation.New`/`.Validator`. Update `app/resources.go` import and `test/unit/validation`â†’`test/unit/schemavalidation`.
+
+### Step 6 â€” Package restructure: `internal/views` + `internal/views/form` (delete `internal/ui/`)
+- Create **`internal/views`** (move from `internal/transport/http/views`): `layout.templ`, `resource.templ`, `delete.templ`, `credentials.templ`, `models.go`, `helpers.go`. Add `display.go` = the general helpers moved from `ui/render/render.go` (`Columns`, `Cell`, `DisplayValue`, `ValueString`).
+- Create **`internal/views/form`** (package `form`): `form.templ` (moved), `fields.go` (`FormView`, `FormFieldView`, `FormFields`, `InputType`), `widgets.go` (**`WidgetRegistry`** â€” renamed; built-in map + user `html/template` files), `args.go`, `autoselect.go`. Built-in widget Templ components live in this package (per Step 7).
+- Delete `internal/ui/` entirely.
+- Dependency rule: `form` may import `views` (for `DisplayValue`/`ValueString`); `views` must NOT import `form` (`Page` takes a generic `templ.Component`). Handlers import both.
+- Update imports across `internal/transport/http/handlers/*`, `router.go`, `app/resources.go`, `bootstrap.go`. Note the user's `FormView` field set in `models.go` moves into `form/fields.go` unchanged.
+
+### Step 7 â€” Built-in widgets â†’ Templ
+- Convert each `internal/ui/render/templates/*.html.tmpl` into a Templ component in package `form` (e.g. `widget_datetime.templ`, `widget_relation.templ`, â€¦ one file or grouped). They take `form.FieldContext`.
+- `WidgetRegistry`: built-ins = `map[string]func(FieldContext) templ.Component`; user `template_file`s stay runtime `html/template` (parsed at startup). `Component(id, ctx) (templ.Component, bool)`: built-in â†’ its func; user â†’ render `html/template` â†’ `templ.Raw(html)`.
+- `FormFieldView.Widget templ.Component`; `form.templ` renders `if f.Widget != nil { @f.Widget } else { <kind switch> }`. Drop the `@templ.Raw(string(CustomHTML))` string path for built-ins.
+- Handler `renderWidget` returns `templ.Component`.
+
+### Step 8 â€” Config `ui:` section
+- New `internal/config/ui.go`: `UISection{ MonacoCDN, EasyMDECDN string; PageSize int }` (+ defaults: pinned CDN URLs, PageSize 25) + `WithDefaults`/`Validate`. Aggregate into `Config`. Pass UI settings into the layout (CDN URLs exposed to islands via a small `<script>`-free data attribute or a JSON `<meta>`/`window.__sa` set from a templ-rendered inline config â€” CSP-safe: render as `data-*` on a root element, islands read them).
+
+### Step 9 â€” Feature: discovery polling loop
+- Refactor `app/resources.go`: extract `assembleRuntimes(ctx, cfg, configDir) ([]*resource.Runtime, error)` (run sources â†’ descriptors â†’ validators + `backend.Client` + `Service`), used at startup and each poll.
+- New poller (e.g. `internal/app/poller.go`): if any backend has `discovery`, start a goroutine on the smallest `poll_interval`; each tick re-run `assembleRuntimes`, on success `registry.Replace(...)`; log + keep old set on error; stop on `ctx.Done()`. Wire start in `bootstrap.go`.
+- Update `registry.go` comment (polling now real).
+
+### Step 10 â€” Feature: pagination + sort
+- `resource.ListParams` += `Sort string`, `Desc bool`; `backend.Client.List` adds `sort`/order query params (PocketBase uses `sort=-field`).
+- List handler reads `?page&perPage&sort&desc` (perPage default from `ui.PageSize`); `views.ListView` += pagination state; new `views/pagination.templ` (Bulma `pagination`, prev/next/page-info) + sortable column headers (links carry `hx-get` to swap the table region). HTMX swaps a `#sa-list` target; full-page fallback works too.
+
+### Step 11 â€” Feature: flash messages
+- On create/update/delete success, redirect (`HX-Redirect`) to the target with `?flash=<created|updated|deleted>`.
+- `views.PageData` += `Flash`; layout renders a Bulma `notification` when set; `web/static/js/app.js` auto-dismisses after a few seconds. Handler reads `?flash` and maps to a message. CSP-safe (no inline JS).
+
+### Step 12 â€” Feature: high-value widgets (real)
+- **color** â†’ native `<input type="color">` (Templ, no JS).
+- **json** â†’ `<textarea>` + a "Format" button; `web/static/js/islands/json.js` pretty-prints/validates (no external dep).
+- **tags** â†’ `web/static/js/islands/tags.js` chip input (comma/Enter), syncs hidden input (CSV/JSON); no external dep.
+- **markdown** â†’ `islands/markdown.js` mounts EasyMDE from `ui.EasyMDECDN` on a textarea.
+- **code** â†’ `islands/code.js` mounts Monaco from `ui.MonacoCDN`; `language` arg via `data-language`. (Existing relation/datetime island contract: mount on `DOMContentLoaded` + `htmx:afterSwap`, sync hidden control.)
+- Remaining widgets keep simple Templ stubs. Update CSP `script-src`/`style-src`/`connect-src` to allow the configured CDNs (or `'self'` + CDN host); document the airgap path.
+
+### Step 13 â€” Promised-comment cleanup + docs + CI + `.plan`
+- Remove/refresh resolved comments: `app/resources.go` ("Validator wired in a later step"), `registry.go` (polling), README `poll_interval`/widgets lines, `helpers.go` schemeLabel (bearer still stubbed â€” keep).
+- README + `docs/AGENTS.md`: new package layout, `/` redirect, `ui:` config, polling/pagination/flash, widget list, naming (backend/schemavalidation/views).
+- **CI/govulncheck**: bump `go.mod` go directive + CI to latest go 1.26.x patch; re-run `govulncheck`. If stdlib-only advisories persist (DB ahead of releases), make the govulncheck step **report-only** in `make lint`/CI with a documented note rather than a red gate.
+- Refresh `.plan/` (progress board for Phase 2, decisions, per-step todos).
+
+---
+
+## Critical files
+
+- `internal/app/{bootstrap.go,resources.go,poller.go}` â€” shutdown, assemble/poll wiring.
+- `cmd/simple-admin/main.go` â€” shutdown exit code, product rename.
+- `internal/transport/http/{router.go,handlers/{ui.go,forms.go}}` â€” routes, view-package imports, widget/component dispatch, pagination/flash.
+- `internal/backend/*` (was upstream), `internal/schemavalidation/*` (was validation).
+- `internal/views/**` + `internal/views/form/**` (was `internal/transport/http/views` + `internal/ui/render`).
+- `internal/config/{config.go,ui.go,defaults.go,resources.go}` + `configs/config.example.yaml`.
+- `web/static/js/islands/{code,markdown,tags,json}.js`, `web/static/js/app.js`.
+- `Makefile`, `goreleaser/.goreleaser.yaml`, `.github/workflows/go-quality.yml`, `go.mod`.
+
+## Verification
+
+- `make generate && make build && make lint && make test test-race` pass (govulncheck per Step 13 note).
+- **Shutdown**: run the binary, send Ctrl+C â†’ process exits **0**, logs a clean shutdown.
+- **Routing**: `GET /` â†’ 302 `/ui`; `/favicon.ico` â†’ 204; `/ui` still redirects to first resource.
+- **Rename sanity**: no remaining `echo`/`upstream`/`validation` package refs (`grep`); binary is `dist/simple-admin`; metrics prefix `simple-admin`.
+- **Widgets**: built-ins render via Templ; an edit form shows datetime/relation as before plus code (Monaco)/markdown/tags/color/json working (CDN reachable); a user `template_file` still renders.
+- **Polling**: point a discovery backend at the example backend, add/remove a collection, confirm the sidebar/resources update within `poll_interval` (no restart).
+- **Pagination/sort**: seed >PageSize records; list shows pagination + sortable headers; HTMX swaps the table; URLs bookmarkable.
+- **Flash**: create/update/delete â†’ redirect shows a dismissable success notification.
+- Integration smoke against the PocketBase example backend (manual + discovery) end-to-end, as in Phase 1.

@@ -19,4 +19,25 @@ Status: `todo` · `in_progress` · `blocked` · `done`. Update date on every cha
 | 12 | Custom fields + built-in islands | done | widget registry + args(jsonpath) + auto-select + relation island/options + stubs; verified | 2026-06-14 |
 | 13 | Polish (CSP, docs, README mermaid) | done | CSP+headers, README+mermaid+contract, AGENTS.md; lint clean (govulncheck=stdlib/toolchain, noted) | 2026-06-14 |
 
-Current focus: **MVP complete** (steps 0–13 done). Deferred: discovery polling loop, pagination/sort UI, flash messages, bearer/basic/oauth auth. Known: govulncheck flags stdlib advisories (Go toolchain maintenance, not project code).
+Phase 1 (MVP) complete (steps 0–13 done).
+
+## Phase 2 — cleanup/refactor + high-value features
+
+| Step | Title | Status | Note | Updated |
+|---|---|---|---|---|
+| p2-0 | `.plan` Phase-2 setup + standing rule | in_progress | seed board/decisions/todos + README rule | 2026-06-14 |
+| p2-1 | Graceful shutdown (exit 0 on Ctrl+C) | todo | | 2026-06-14 |
+| p2-2 | GET / → /ui + favicon 204 | todo | | 2026-06-14 |
+| p2-3 | Remove echo scaffold + rename product → simple-admin | todo | | 2026-06-14 |
+| p2-4 | Rename internal/upstream → internal/backend | todo | | 2026-06-14 |
+| p2-5 | Rename internal/validation → internal/schemavalidation | todo | | 2026-06-14 |
+| p2-6 | Restructure → internal/views + internal/views/form | todo | | 2026-06-14 |
+| p2-7 | Built-in widgets → templ | todo | | 2026-06-14 |
+| p2-8 | Config ui: section (CDN URLs, page size) | todo | | 2026-06-14 |
+| p2-9 | Discovery polling loop | todo | | 2026-06-14 |
+| p2-10 | Pagination + sort UI | todo | | 2026-06-14 |
+| p2-11 | Flash messages | todo | | 2026-06-14 |
+| p2-12 | High-value widgets (color/json/tags/markdown/code) | todo | | 2026-06-14 |
+| p2-13 | Comments cleanup + docs + CI + .plan | todo | | 2026-06-14 |
+
+Current focus: **Phase 2, Step p2-0**. Staying stubbed: low-value widgets + bearer/basic/oauth auth. Routing keeps `/ui` prefix (+ `GET /` redirect). `internal/source` kept.

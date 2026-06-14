@@ -116,14 +116,14 @@ type DeleteView struct {
 
 // FormView is the data for a create/edit form.
 type FormView struct {
-	Backend    resource.Backend
-	Name       string
-	Label      string
-	Mode       string // create|edit
-	ID         string
-	Action     string // admin route the form submits to
-	UsePut     bool   // edit submits via hx-put; create via hx-post
-	CancelURL  string
-	FormError  string // non-field-level error
-	Fields     []FormFieldView
+	Backend   resource.Backend
+	Name      string
+	Label     string
+	Mode      string // create|edit
+	ID        string
+	Action    string // admin route the form submits to
+	UsePut    bool   // edit submits via hx-put; create via hx-post
+	CancelURL string
+	FormError string // non-field-level error
+	Fields    []FormFieldView
 }

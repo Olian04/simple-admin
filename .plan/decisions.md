@@ -56,4 +56,26 @@ Append-only. Newest at bottom. Each entry: decision · rationale · date.
 
 21. **`source/openapi` uses a focused `encoding/json` parser, NOT `pb33f/libopenapi` (for now).** Supersedes decision 3's lib choice for the MVP. Our reference spec is JSON with local component `$ref`s; a small parser (resolve `#/components/schemas/*`, pair collection/item paths, derive capabilities + auth scheme from `securitySchemes`) is robust and keeps the module lean. — Revisit libopenapi if we need YAML specs, OpenAPI 3.1 nuances, or remote `$ref`s. Discovery polling is still deferred; this is the one-shot parse.
 
+---
+
+## 2026-06-14 — Phase 2 (cleanup/refactor + features)
+
+22. **`.plan/` is a STANDING REPO RULE** for every plan/phase, not just Phase 1 — recorded in `.plan/README.md`.
+
+23. **Routing keeps the `/ui` prefix**; add `GET /` → 302 `/ui` (+ `GET /favicon.ico` → 204). — User chose this over dropping the prefix (resolves the #4-vs-#7 conflict in their request).
+
+24. **Remove the `echo` scaffold; rename product `echo` → `simple-admin`** (cli/binary/logs/`DefaultMetricPrefix`). — Kills the biggest "service" naming confusion; `echo` was leftover template.
+
+25. **Renames:** `internal/upstream` → `internal/backend` (`backend.Client`, `backend.Error`); `internal/validation` → `internal/schemavalidation`. **Keep `internal/source`** (descriptor origin, genuinely distinct). Rename widget `render.Registry` → `form.WidgetRegistry`.
+
+26. **Package layout:** delete `internal/ui/`; views move to top-level `internal/views` with a `internal/views/form` subpackage (form rendering: form.templ + fields + WidgetRegistry + args + autoselect + built-in widget templ). `form` may import `views`; `views` must not import `form`.
+
+27. **Built-in widgets become Templ components** (compile-time); user-supplied `template_file`s stay runtime `html/template` (can't compile user files). `FormFieldView.Widget templ.Component`.
+
+28. **Widget rich-editor JS = CDN by default, config-overridable** via a new `ui:` config section (`MonacoCDN`, `EasyMDECDN`, `PageSize`). Airgap can self-host. — Avoids vendoring multi-MB Monaco / Node build.
+
+29. **Phase-2 feature scope:** discovery polling, pagination/sort, flash, widgets (code/markdown/tags/color/json). **Staying stubbed:** low-value widgets + bearer/basic/oauth auth.
+
+30. **CI/govulncheck:** bump Go toolchain to latest 1.26.x; if stdlib-only advisories persist (DB ahead of releases), make the govulncheck step report-only with a documented note rather than a red gate.
+
 
