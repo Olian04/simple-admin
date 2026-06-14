@@ -15,7 +15,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/transport/metricshttp"
 )
 
-func Run(ctx context.Context, cfg config.Config) error {
+func Run(ctx context.Context, cfg config.Config, configDir string) error {
 	cfg = cfg.WithDefaults()
 	registry, err := metrics.NewRegistry(
 		metrics.WithNamespace(cfg.Metrics.MetricPrefix),
@@ -24,8 +24,14 @@ func Run(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return fmt.Errorf("metrics registry: %w", err)
 	}
+
+	resources, err := buildRegistry(ctx, cfg, configDir)
+	if err != nil {
+		return fmt.Errorf("build resources: %w", err)
+	}
+
 	svc := echo.NewService()
-	handler := httptransport.Router(svc, registry)
+	handler := httptransport.Router(svc, registry, resources)
 
 	n := 1
 	metricsOn := cfg.MetricsEnabled()

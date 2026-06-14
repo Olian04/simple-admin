@@ -1,0 +1,62 @@
+package views
+
+// Page renders the full-page shell: sidebar + main content. The main content
+// is swapped directly by HTMX on partial requests (see handlers).
+templ Page(data PageData) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ data.Title }</title>
+			<link rel="stylesheet" href="/static/css/bulma.min.css"/>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="/static/js/htmx.min.js" defer></script>
+		</head>
+		<body>
+			<div class="sa-shell">
+				<aside class="sa-sidebar">
+					@Sidebar(data)
+				</aside>
+				<main class="sa-main" id="sa-main">
+					if data.Content != nil {
+						@data.Content
+					}
+				</main>
+			</div>
+		</body>
+	</html>
+}
+
+// Sidebar lists resources grouped by backend.
+templ Sidebar(data PageData) {
+	<a class="sa-brand" href="/ui">simple-admin</a>
+	if len(data.Groups) == 0 {
+		<p class="menu-label">No backends configured</p>
+	}
+	<nav class="menu">
+		for _, g := range data.Groups {
+			<p class="menu-label">{ g.Backend.Label }</p>
+			<ul class="menu-list">
+				for _, it := range g.Resources {
+					<li>
+						<a
+							href={ templ.SafeURL("/ui/" + it.BackendID + "/" + it.Name) }
+							class={ templ.KV("is-active", it.Active) }
+						>
+							{ it.Label }
+						</a>
+					</li>
+				}
+			</ul>
+		}
+	</nav>
+}
+
+// Placeholder is the default main content before a resource is selected.
+templ Placeholder() {
+	<section class="section">
+		<h1 class="title">Welcome</h1>
+		<p class="subtitle">Select a resource from the sidebar to get started.</p>
+	</section>
+}

@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/urfave/cli/v3"
@@ -47,9 +48,14 @@ func main() {
 }
 
 func runCLI(ctx context.Context, c *cli.Command) error {
-	cfg, err := config.Load(c.String("config"))
+	configPath := c.String("config")
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
+	}
+	configDir := "."
+	if configPath != "" {
+		configDir = filepath.Dir(configPath)
 	}
 
 	logLabels := maps.Clone(map[string]string(cfg.Labels))
@@ -70,7 +76,7 @@ func runCLI(ctx context.Context, c *cli.Command) error {
 	}
 	defer cleanup()
 
-	return app.Run(ctx, cfg)
+	return app.Run(ctx, cfg, configDir)
 }
 
 func printVersion(vi version.VersionInfo) func(cmd *cli.Command) {
