@@ -1,6 +1,10 @@
 package form_test
 
 import (
+	"bytes"
+	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/Olian04/simple-admin/internal/domain/resource"
@@ -106,6 +110,49 @@ func TestFieldContextSiblingQueries(t *testing.T) {
 	}
 	if e := ctx.SiblingsOfKind("enum"); len(e) != 1 || e[0].Field.Name != "status" {
 		t.Fatalf("SiblingsOfKind(enum) wrong: %+v", e)
+	}
+}
+
+// Proves additional-request #3: a user-supplied html/template widget receives
+// the SAME enriched FieldContext (Args + Field metadata + sibling queries) as
+// built-in Templ widgets.
+func TestUserTemplateGetsEnrichedContext(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "w.html.tmpl")
+	tmpl := `kind={{ .Field.Kind }} lang={{ .Arg "language" "none" }} ` +
+		`featured={{ .SiblingValue "featured" }} bools={{ len .BoolSiblings }} ids={{ len .IDSiblings }}`
+	if err := os.WriteFile(path, []byte(tmpl), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	reg, err := form.NewWidgetRegistry(dir, []string{"w.html.tmpl"})
+	if err != nil {
+		t.Fatalf("registry: %v", err)
+	}
+	if !reg.Has("w.html.tmpl") {
+		t.Fatal("user template not registered")
+	}
+
+	ctx := form.FieldContext{
+		Field: resource.Field{Name: "title", Kind: resource.KindString},
+		Args:  map[string]any{"language": "markdown"},
+		Siblings: []form.Sibling{
+			{Field: resource.Field{Name: "featured", Kind: resource.KindBoolean}, Value: "true"},
+			{Field: resource.Field{Name: "authorId", Kind: resource.KindString}, Value: "a1"},
+		},
+	}
+	comp, ok := reg.Component("w.html.tmpl", ctx)
+	if !ok {
+		t.Fatal("Component returned !ok for user template")
+	}
+	var buf bytes.Buffer
+	if err := comp.Render(context.Background(), &buf); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	got := buf.String()
+	want := "kind=string lang=markdown featured=true bools=1 ids=1"
+	if got != want {
+		t.Fatalf("user template output\n got: %q\nwant: %q", got, want)
 	}
 }
 

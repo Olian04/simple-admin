@@ -12,6 +12,7 @@ Status: `done`
 ## Verification
 
 - generate/build/vet/golangci(0)/tests pass; sibling-query test green
+- `TestUserTemplateGetsEnrichedContext`: a user html/template renders `.Field.Kind`/`.Arg`/`.SiblingValue`/`.BoolSiblings`/`.IDSiblings` — proves built-in templ AND user templates share the same enriched context
 
 ## Notes
 
