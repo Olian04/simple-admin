@@ -41,7 +41,20 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	mux.Handle("GET /ui/{backend}/{name}/{id}/delete", stdhttp.HandlerFunc(ui.DeleteConfirm))
 	mux.Handle("DELETE /ui/{backend}/{name}/{id}", stdhttp.HandlerFunc(ui.Delete))
 
-	return middleware(withCredentials(mux), registry)
+	return middleware(securityHeaders(withCredentials(mux)), registry)
+}
+
+// securityHeaders sets a strict CSP. All scripts/styles are served from /static
+// (no inline JS; inline styles moved to app.css), so 'self' suffices.
+func securityHeaders(next stdhttp.Handler) stdhttp.Handler {
+	const csp = "default-src 'self'; script-src 'self'; style-src 'self'; " +
+		"img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'"
+	return stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		w.Header().Set("Content-Security-Policy", csp)
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "same-origin")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // withCredentials lifts the browser-supplied passthrough credential

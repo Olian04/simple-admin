@@ -35,6 +35,10 @@
   margin-top: 0.25rem;
 }
 
+.sa-detail-label {
+  width: 12rem;
+}
+
 @media (max-width: 768px) {
   .sa-shell {
     flex-direction: column;

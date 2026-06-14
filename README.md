@@ -1,77 +1,147 @@
-# App-first Go architecture template
+# simple-admin
 
-Runnable standalone module (copy/adapt into a new repo). Thin `cmd`, `internal/app` wiring, domain + transport + observability; **`labels`** (logs + Prometheus `ConstLabels`) and **`http` / `metrics` / `logging`** blocks typed inside **`internal/config`** (`defaults.go`, `labels.go`, `http.go`, `metrics.go`, `logging.go`, root aggregate).
+> **Every backend ends up hand-rolling an admin panel.** simple-admin is one configurable, backend-agnostic admin that any compliant backend can plug into via an OpenAPI spec + CRUD endpoints, with zero frontend code per resource.
+
+A single Go binary that renders CRUD screens for resources hosted by *other* backends, generating the entire UI from the resources' JSON Schemas. Stack: [Templ](https://templ.guide) + [HTMX](https://htmx.org) + [Bulma](https://bulma.io), with small JS islands for rich widgets. No SPA, no Node toolchain.
+
+## Architecture & data flow
+
+```mermaid
+flowchart TB
+  subgraph Startup["Startup: config -> descriptors -> UI model"]
+    CFG["config.yaml — backends[]"]
+    CFG -->|manual mode| MAN["internal/source/manual<br/>load JSON Schema (path | url)"]
+    CFG -->|discovery mode| DISC["internal/source/openapi<br/>fetch + parse OpenAPI spec"]
+    MAN --> DESC["[]ResourceDescriptor<br/>schema · CRUD paths · capabilities<br/>auth scheme · field templates"]
+    DISC --> DESC
+    DESC --> REG["domain/resource Registry<br/>grouped by backend · swappable"]
+    REG --> VAL["compile JSON Schema validators"]
+    REG --> RND["ui/render<br/>schema -> columns + form inputs<br/>auto-select field widgets"]
+    REG --> SB["sidebar: resources grouped by backend"]
+  end
+
+  subgraph Browser["Browser"]
+    UI["Templ + Bulma pages · HTMX swaps"]
+    ISL["JS islands: datetime, relation, ..."]
+    CRED["credentials.js<br/>localStorage simple-admin:cred:&lt;backendId&gt;"]
+    UI --- ISL
+    UI --- CRED
+  end
+
+  RND --> UI
+  SB --> UI
+
+  subgraph Admin["Admin server — transport/http"]
+    H["UI handlers /ui/{backend}/{name}/..."]
+    MW["credentials middleware<br/>extract X-Sa-Credential"]
+    WVAL["validate body on POST/PUT/PATCH"]
+    UP["upstream client + auth passthrough"]
+    H --> MW --> WVAL
+  end
+
+  subgraph Up["Upstream backend (e.g. PocketBase example)"]
+    API["CRUD REST API + /openapi.json"]
+  end
+
+  UI -->|"HTMX request + X-Sa-Credential (from localStorage)"| H
+  VAL -. compiled schema .-> WVAL
+  WVAL -->|invalid| ERRP["422: re-render form with inline errors"]
+  ERRP --> UI
+  WVAL -->|valid write / read / delete| UP
+  UP -->|inject credential per auth scheme| API
+  API -->|JSON| UP
+  UP --> RESP["render list / detail / form partial"]
+  RESP --> UI
+  DISC -. "discovery request (server-side creds)" .-> API
+```
+
+## Quick start
+
+Bring up the admin UI + the reference PocketBase backend:
+
+```sh
+docker compose -f deploy/docker-compose.yml up --build
+# admin UI:        http://localhost:8080/ui
+# example backend: http://localhost:8090/openapi.json
+```
+
+Or run locally:
+
+```sh
+# 1. reference backend (separate module)
+cd example-backend && go run . serve --http=127.0.0.1:8090
+
+# 2. admin UI
+make run   # APP_CONFIG_FILE=configs/config.example.yaml, or pass --config
+```
+
+## Configuration
+
+`APP_CONFIG_FILE` (or `--config`) points at a YAML file — see [`configs/config.example.yaml`](configs/config.example.yaml). Each backend is **manual** (resources listed with their own JSON Schema) or **discovery** (resources derived from an OpenAPI spec):
+
+```yaml
+backends:
+  - id: example                         # stable id -> sidebar group + browser cred key
+    base_url: http://localhost:8090
+    auth: { type: apikey, in: header, name: X-API-Key }   # scheme only (no secret)
+    resources:
+      - name: posts
+        schema: ./schemas/post.json     # path OR { url: ... }
+        paths: { collection: /api/collections/posts/records, item: /api/collections/posts/records/{id} }
+        update_verb: PATCH
+        field_templates:
+          body: code                    # built-in widget id (shorthand)
+          rating: { template: rating, args: { max: { jsonpath: '$.maxRating' } } }
+  - id: gateway
+    base_url: http://localhost:8090
+    discovery:                          # resources + auth scheme derived from the spec
+      url: http://localhost:8090/openapi.json
+      poll_interval: 5m                 # polling loop is designed-for but not yet built
+      auth: { type: apikey, in: header, name: X-API-Key, value: ${GATEWAY_DISCOVERY_KEY} }
+```
+
+### Compliant backend contract
+
+A backend works with simple-admin if it exposes:
+
+- `GET /openapi.json` — OpenAPI 3 describing resources, component schemas, CRUD paths, and `securitySchemes` (discovery mode).
+- CRUD per resource: `GET {collection}` (list — bare array or `{items:[…]}` envelope), `POST {collection}`, `GET {item}`, `PUT`/`PATCH {item}`, `DELETE {item}` where `{item}` = collection + `/{id}`.
+- Conventional status codes (404, 4xx) + JSON bodies.
+
+`example-backend/` is a runnable reference built on PocketBase that satisfies this contract.
+
+## Auth
+
+The admin holds **no secrets**. Per-backend credentials live in the **browser's localStorage** (Credentials page in the sidebar), are injected into requests as `X-Sa-Credential`, and the server **passes them through** to the upstream backend per its auth scheme. `none` + `apikey` are implemented; `bearer`/`basic`/`oauth` are stubbed (config rejects them with a clear error). The auth scheme is declared in YAML for manual backends and derived from `securitySchemes` for discovery backends.
+
+## Field widgets
+
+Form fields render via descriptive, library-agnostic widgets. Built-ins auto-select by convention (`date-time` → `datetime`; a `{resource}`/`{resource}Id` field referencing another resource on the same backend → `relation` picker), and any field can be overridden in config. Widget args are static or resolved from the record via JSONPath. `datetime` + `relation` are implemented; `code`, `geo`, `markdown`, etc. are registered stubs. Operators can also point a field at a custom `html/template` file.
+
+## Development
+
+```sh
+make generate   # templ -> *_templ.go (gitignored)
+make build      # static binary
+make lint       # vet, mod verify, govulncheck, golangci-lint
+make test       # unit tests (mirror internal/ under test/unit/)
+```
+
+See [`.plan/`](.plan/) for the implementation plan, decision log, and per-step progress.
 
 ## Layout
 
 | Path | Role |
 | --- | --- |
-| `cmd/<binary>` | Entry: env config path, slog setup, signal context, `app.Run`. |
-| `internal/app` | Composition root + HTTP + optional metrics listener. |
-| `internal/domain/<name>` | Pure behavior (sample: echo). |
-| `internal/config` | Root YAML `Load`, aggregate type `Config`, YAML-aligned structs + defaults/`WithDefaults`/`Validate`. |
-| `internal/transport/*` | HTTP routes, metrics server helper. |
-| `internal/observability/*` | slog helpers, Prometheus registry. |
-| `configs/` | Product-shaped example YAML. |
-| `test/unit/` | Unit tests mirror package paths under `internal/`. |
-| `.cursor/` | Same Cursor layout as sibling Bifrost repo (skills, rules, agents). |
-| `.github/workflows/` | CI (lint + race) and tag release via GoReleaser. |
-
-## Dependency direction
-
-`cmd` → `internal/app` → domain, transports, observability, config. Domain avoids HTTP / slog / Prometheus imports.
-
-## Config
-
-Point `APP_CONFIG_FILE` at a YAML file (omit for built-in defaults). See [`configs/config.example.yaml`](configs/config.example.yaml):
-
-- **`labels`** — map attached to every log line and Prometheus const labels on app metrics; keys must satisfy legacy Prometheus label rules.
-- **`http.listen_addr`** — main server bind.
-- **`metrics.enabled`** / **`listen_addr`** / **`metric_prefix`** — scrape endpoint and metric namespace (`{metric_prefix}_http_requests_total`).
-- **`logging`** — `level` (`debug|info|warn|error`), `format` (`json|text`), `stream` (`stdout|stderr`).
-
-## Run locally
-
-```bash
-go run ./cmd/simple-admin
-APP_CONFIG_FILE=configs/config.example.yaml go run ./cmd/simple-admin
-```
-
-```bash
-curl -X POST http://localhost:8080/echo -H 'Content-Type: application/json' -d '{"message":" hello "}'
-curl http://localhost:9090/metrics
-```
-
-Scrape uses Prometheus exposition; `labels` appear as metric const labels where registered.
-
-## Bootstrap new repo from template
-
-Requires git `origin`, infers Go module path, renames cmd default (`echo`), runs `go mod tidy`, deletes itself unless `BOOTSTRAP_KEEP=1`:
-
-```bash
-./bootstrap.sh
-```
-
-## Checks
-
-Inside this directory:
-
-```bash
-make lint
-make test
-make test-race
-```
-
-From enclosing Bifrost repo:
-
-```bash
-make test-template
-```
-
-## Releases
-
-Push tag `v*`; [`.github/workflows/release.yml`](.github/workflows/release.yml) runs GoReleaser against [`goreleaser/.goreleaser.yaml`](goreleaser/.goreleaser.yaml). [`goreleaser/Dockerfile`](goreleaser/Dockerfile) expects binary artifact `echo` on build context root for manual image builds.
-
-## Agent orientation
-
-[`docs/AGENT_CONTEXT.md`](docs/AGENT_CONTEXT.md): layout, config contract, distilled Go Proverbs + Uber-style guide (compressed).
+| `cmd/simple-admin` | Entry: config load, slog, signals, `app.Run`. |
+| `internal/app` | Composition root: build descriptor sources → registry → widgets → wire router. |
+| `internal/config` | YAML config (`backends:` manual/discovery), defaults, validation. |
+| `internal/domain/resource` | Canonical model (`ResourceDescriptor`), ports (`Store`/`Validator`/`DescriptorSource`), registry. Pure stdlib. |
+| `internal/source/{manual,openapi}` | Produce descriptors from config / OpenAPI specs. |
+| `internal/upstream` | Outbound CRUD client + auth passthrough. |
+| `internal/validation` | JSON Schema validation → field-keyed errors. |
+| `internal/ui/render` | Schema → columns/form models; widget registry + args + auto-select. |
+| `internal/transport/http` | Router, handlers, Templ views, credentials middleware, CSP. |
+| `web/` | Embedded static assets (Bulma, HTMX, app.css, islands). |
+| `example-backend/` | **Separate module**: PocketBase reference backend + generated OpenAPI. |
+| `deploy/` | docker-compose local stack. |

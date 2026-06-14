@@ -1,37 +1,41 @@
-# Agent context: app template
+# Agent context: simple-admin
 
-App-first HTTP echo service template — use with repo `README.md` and [`configs/config.example.yaml`](../configs/config.example.yaml).
+Portable schema-driven admin UI (Go + Templ + HTMX + Bulma) that drives CRUD on
+*other* backends. Use with `README.md` + [`configs/config.example.yaml`](../configs/config.example.yaml).
+
+> ⚠️ **ALL AGENTS: caveman communication mode at all times** (terse; drop articles/filler; code & commits normal). **On resume, read [`.plan/README.md`](../.plan/README.md) → `.plan/progress.md` → that step's `.plan/todo/*.md` → `.plan/decisions.md`** — the durable plan/decision/progress record.
 
 ## Layout
 
 | Path | Role |
 | --- | --- |
-| `cmd/simple-admin` | Entry: load config, `logging.Setup`, signal context, `app.Run`. |
-| `internal/app` | Wire Prometheus registry, router, dual listeners. |
-| `internal/config` | Root YAML `Load`; `Config` + `Labels`, `HTTPSection`, `MetricsSection`, `LoggingSection` (defaults/`WithDefaults`/`Validate`). |
-| `internal/domain/echo` | Echo domain logic only. |
-| `internal/transport/http` | Routes + middleware (request logs + metrics increment). |
-| `internal/transport/metricshttp` | `/metrics` server lifecycle. |
-| `internal/observability/logging` | slog setup from config. |
-| `internal/observability/metrics` | Prometheus counter + handler. |
-| `test/unit/...` | Unit tests beside mirrored paths. |
-| `configs` | YAML contract examples. |
+| `cmd/simple-admin` | Entry: load config, `logging.Setup`, signal ctx, `app.Run(ctx, cfg, configDir)`. |
+| `internal/app` | Composition root: `buildRegistry` (sources → descriptors → Runtimes), `buildWidgets`, wire router. |
+| `internal/config` | `backends:` config (manual\|discovery modes), union YAML types, validation. |
+| `internal/domain/resource` | Canonical `ResourceDescriptor`, ports (`Store`/`Validator`/`DescriptorSource`), `Service`, swappable `Registry`, JSON-Schema→`[]Field`. **Pure stdlib.** |
+| `internal/source/{manual,openapi}` | `DescriptorSource` impls → `[]ResourceDescriptor`. |
+| `internal/upstream` | CRUD HTTP client (`Store`) + ctx-credential apikey passthrough + typed errors. |
+| `internal/validation` | jsonschema/v6 → `resource.Validator` (field-keyed errors). |
+| `internal/ui/render` | columns/form models; widget `Registry` (embedded + user files), `ResolveArgs` (JSONPath), `AutoSelectWidget`. |
+| `internal/transport/http` | Router (`/ui/...` routes), handlers (ui/forms), Templ `views/`, credentials middleware, CSP. |
+| `web/` | `//go:embed static` (Bulma, HTMX, app.css, JS islands). |
+| `example-backend/` | **Separate Go module** (own go.mod): PocketBase reference backend + generated OpenAPI. |
+| `test/unit/...` | Unit tests mirror `internal/` paths. |
 
 ## Dependency direction
 
-`cmd` → `internal/app` → domain, transport, observability, aggregated `internal/config`. Domain must not import app, transports, observability.
+`cmd` → `internal/app` → `{source, upstream, validation, ui/render, transport, config}`; `source/* → domain/resource`; **`domain/resource` imports only stdlib + own ports** (no OpenAPI/HTTP/config). OpenAPI lives under `internal/source/` so domain cannot reach it.
 
-## Configuration
+## Key conventions
 
-`APP_CONFIG_FILE` optional; unset uses defaults matching example file shapes.
-
-Section structs (`Labels`, HTTP, metrics, logging maps) carry `Default*` constants in-package, `WithDefaults()`, `Validate()`. Root `config.Config.Validate()` delegates down.
-
-Prometheus **`labels`** keys: legacy Prometheus label ASCII rules (`model.LegacyValidation`). **`metrics.metric_prefix`**: composed `{prefix}_http_requests_total` must be valid legacy metric name.
+- Templ components compile to gitignored `*_templ.go`; `make build/lint/test/run` depend on `generate`. Run `go tool templ generate` after editing `.templ`.
+- Auth: no server secrets; per-backend creds in browser localStorage → `X-Sa-Credential` → passthrough. Manual auth scheme in YAML; discovery derives from `securitySchemes`. Only none/apikey active.
+- Custom-field widget files (`web/static/js/islands/*.js` + `internal/ui/render/templates/*.html.tmpl`) share the island contract (hidden control + re-mount on `htmx:afterSwap`).
+- List responses may be a bare array or `{items:[…]}` envelope (PocketBase). Update verb is per-resource (PUT|PATCH).
 
 ## Commands (`make`)
 
-`lint`, `test`, `test-race`, `run`, `build` (output `./dist/echo`).
+`generate`, `lint`, `test`, `test-race`, `run`, `build` (output `./dist/echo`).
 
 ---
 
