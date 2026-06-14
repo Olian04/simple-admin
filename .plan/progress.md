@@ -27,8 +27,8 @@ Phase 1 (MVP) complete (steps 0–13 done).
 |---|---|---|---|---|
 | p2-0 | `.plan` Phase-2 setup + standing rule | done | 3e64e3f | 2026-06-14 |
 | p2-1 | Graceful shutdown (exit 0 on Ctrl+C) | done | ctx.Done→nil + main ignores Canceled + test | 2026-06-14 |
-| p2-2 | GET / → /ui + favicon 204 | in_progress | | 2026-06-14 |
-| p2-3 | Remove echo scaffold + rename product → simple-admin | todo | | 2026-06-14 |
+| p2-2 | GET / → /ui + favicon 204 | done | GET /{$}→302 /ui, favicon 204; smoke ok | 2026-06-14 |
+| p2-3 | Remove echo scaffold + rename product → simple-admin | in_progress | | 2026-06-14 |
 | p2-4 | Rename internal/upstream → internal/backend | todo | | 2026-06-14 |
 | p2-5 | Rename internal/validation → internal/schemavalidation | todo | | 2026-06-14 |
 | p2-6 | Restructure → internal/views + internal/views/form | todo | | 2026-06-14 |

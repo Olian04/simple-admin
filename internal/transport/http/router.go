@@ -23,6 +23,15 @@ func Router(svc echo.Service, registry *metrics.Registry, resources *resource.Re
 	}))
 	mux.Handle("POST /echo", echoHandler)
 
+	// Root redirect + favicon. {$} anchors the exact root path so it does not
+	// swallow other unmatched routes.
+	mux.Handle("GET /{$}", stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		stdhttp.Redirect(w, r, "/ui", stdhttp.StatusFound)
+	}))
+	mux.Handle("GET /favicon.ico", stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
+		w.WriteHeader(stdhttp.StatusNoContent)
+	}))
+
 	// Static assets (vendored Bulma/HTMX + app.css + islands).
 	staticFS, _ := fs.Sub(web.Static, "static")
 	mux.Handle("GET /static/", stdhttp.StripPrefix("/static/", stdhttp.FileServerFS(staticFS)))

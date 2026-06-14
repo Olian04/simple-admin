@@ -18,4 +18,4 @@ Status: `done`
 
 ## Commit
 
-- (next)
+- `b118764` fix: graceful shutdown on SIGINT/SIGTERM (exit 0)
