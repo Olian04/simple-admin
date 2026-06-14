@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Olian04/go-app-template/internal/config"
-	"github.com/Olian04/go-app-template/internal/domain/echo"
-	"github.com/Olian04/go-app-template/internal/observability/metrics"
-	httptransport "github.com/Olian04/go-app-template/internal/transport/http"
-	"github.com/Olian04/go-app-template/internal/transport/metricshttp"
+	"github.com/Olian04/simple-admin/internal/config"
+	"github.com/Olian04/simple-admin/internal/domain/echo"
+	"github.com/Olian04/simple-admin/internal/observability/metrics"
+	httptransport "github.com/Olian04/simple-admin/internal/transport/http"
+	"github.com/Olian04/simple-admin/internal/transport/metricshttp"
 )
 
 func Run(ctx context.Context, cfg config.Config) error {

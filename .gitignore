@@ -33,4 +33,4 @@ profile.cov
 
 # This project (Makefile / GoReleaser)
 dist/
-/echo
+/simple-admin

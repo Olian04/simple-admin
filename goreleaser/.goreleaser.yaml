@@ -4,16 +4,16 @@
 # CI sets: APP_BUILD_TIME, RELEASE_NAME, RELEASE_BODY, REGISTRY_IMAGE, PUSH_LATEST, GORELEASER_CURRENT_TAG
 version: 2
 
-project_name: echo-template
+project_name: simple-admin
 
 before:
   hooks:
     - go mod download
 
 builds:
-  - id: echo
-    main: ./cmd/echo
-    binary: echo
+  - id: simple-admin
+    main: ./cmd/simple-admin
+    binary: simple-admin
     dir: .
     flags:
       - -trimpath
@@ -29,25 +29,24 @@ builds:
     ldflags:
       - -s
       - -w
-      - -X github.com/Olian04/go-app-template/cmd/echo/version.Version={{ .Tag }}
-      - -X github.com/Olian04/go-app-template/cmd/echo/version.Revision={{ .Commit }}
-      - -X github.com/Olian04/go-app-template/cmd/echo/version.BuildTime={{ .Env.APP_BUILD_TIME }}
+      - -X github.com/Olian04/go-app-template/cmd/simple-admin/version.Version={{ .Tag }}
+      - -X github.com/Olian04/go-app-template/cmd/simple-admin/version.Revision={{ .Commit }}
+      - -X github.com/Olian04/go-app-template/cmd/simple-admin/version.BuildTime={{ .Env.APP_BUILD_TIME }}
 
 archives:
-  - id: echo
+  - id: simple-admin
     formats: [binary]
     name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
     ids:
-      - echo
-
+      - simple-admin
 checksum:
   name_template: checksums.txt
 
 sboms:
-  - id: echo
+  - id: simple-admin
     artifacts: binary
     ids:
-      - echo
+      - simple-admin
     disable: false
 
 changelog:
@@ -65,7 +64,7 @@ changelog:
 dockers_v2:
   - dockerfile: goreleaser/Dockerfile
     ids:
-      - echo
+      - simple-admin
     images:
       - "{{ .Env.REGISTRY_IMAGE }}"
     tags:

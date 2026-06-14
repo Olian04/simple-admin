@@ -11,10 +11,10 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/Olian04/go-app-template/cmd/echo/version"
-	"github.com/Olian04/go-app-template/internal/app"
-	"github.com/Olian04/go-app-template/internal/config"
-	"github.com/Olian04/go-app-template/internal/observability/logging"
+	"github.com/Olian04/simple-admin/cmd/simple-admin/version"
+	"github.com/Olian04/simple-admin/internal/app"
+	"github.com/Olian04/simple-admin/internal/config"
+	"github.com/Olian04/simple-admin/internal/observability/logging"
 )
 
 func main() {

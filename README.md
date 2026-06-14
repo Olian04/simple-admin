@@ -33,8 +33,8 @@ Point `APP_CONFIG_FILE` at a YAML file (omit for built-in defaults). See [`confi
 ## Run locally
 
 ```bash
-go run ./cmd/echo
-APP_CONFIG_FILE=configs/config.example.yaml go run ./cmd/echo
+go run ./cmd/simple-admin
+APP_CONFIG_FILE=configs/config.example.yaml go run ./cmd/simple-admin
 ```
 
 ```bash

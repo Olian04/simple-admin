@@ -6,7 +6,7 @@ App-first HTTP echo service template — use with repo `README.md` and [`configs
 
 | Path | Role |
 | --- | --- |
-| `cmd/echo` | Entry: load config, `logging.Setup`, signal context, `app.Run`. |
+| `cmd/simple-admin` | Entry: load config, `logging.Setup`, signal context, `app.Run`. |
 | `internal/app` | Wire Prometheus registry, router, dual listeners. |
 | `internal/config` | Root YAML `Load`; `Config` + `Labels`, `HTTPSection`, `MetricsSection`, `LoggingSection` (defaults/`WithDefaults`/`Validate`). |
 | `internal/domain/echo` | Echo domain logic only. |

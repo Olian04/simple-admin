@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Olian04/go-app-template/internal/domain/echo"
+	"github.com/Olian04/simple-admin/internal/domain/echo"
 )
 
 func TestEcho(t *testing.T) {

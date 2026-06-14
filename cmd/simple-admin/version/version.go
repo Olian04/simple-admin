@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 )
 
-// LDFLAGS: set via -X github.com/Olian04/go-app-template/cmd/echo/version.<Var>=<value> at link time.
+// LDFLAGS: set via -X github.com/Olian04/simple-admin/cmd/simple-admin/version.<Var>=<value> at link time.
 var (
 	Version   = "unknown"
 	Revision  = "unknown"

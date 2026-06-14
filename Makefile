@@ -8,13 +8,13 @@ BUILD_OUTPUT_DIR := ./dist
 help: ## Show available make targets
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "%-24s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## Build echo binary from ./cmd/echo
+build: ## Build echo binary from ./cmd/simple-admin
 build:
 	mkdir -p $(BUILD_OUTPUT_DIR)
-	go build -trimpath -ldflags "-s -w -X github.com/Olian04/go-app-template/cmd/echo/version.Revision=$(REV) -X github.com/Olian04/go-app-template/cmd/echo/version.BuildTime=$(BUILD_TIME)" -o $(BUILD_OUTPUT_DIR)/echo ./cmd/echo
+	go build -trimpath -ldflags "-s -w -X github.com/Olian04/simple-admin/cmd/simple-admin/version.Revision=$(REV) -X github.com/Olian04/simple-admin/cmd/simple-admin/version.BuildTime=$(BUILD_TIME)" -o $(BUILD_OUTPUT_DIR)/echo ./cmd/simple-admin
 
-run: ## Run echo binary from ./cmd/echo
-	go run ./cmd/echo
+run: ## Run echo binary from ./cmd/simple-admin
+	go run ./cmd/simple-admin
 
 format: ## Run go fmt and gofmt
 	go fmt ./...

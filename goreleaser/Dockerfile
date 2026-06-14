@@ -23,6 +23,6 @@ LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.created="${BUILD_TIME}"
 
-COPY --chmod=0755 ${TARGETPLATFORM}/echo /usr/local/bin/echo
+COPY --chmod=0755 ${TARGETPLATFORM}/simple-admin /usr/local/bin/simple-admin
 
-ENTRYPOINT ["/usr/local/bin/echo"]
+ENTRYPOINT ["/usr/local/bin/simple-admin"]

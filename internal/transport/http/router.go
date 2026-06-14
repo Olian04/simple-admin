@@ -5,9 +5,9 @@ import (
 	stdhttp "net/http"
 	"time"
 
-	"github.com/Olian04/go-app-template/internal/domain/echo"
-	"github.com/Olian04/go-app-template/internal/observability/metrics"
-	"github.com/Olian04/go-app-template/internal/transport/http/handlers"
+	"github.com/Olian04/simple-admin/internal/domain/echo"
+	"github.com/Olian04/simple-admin/internal/observability/metrics"
+	"github.com/Olian04/simple-admin/internal/transport/http/handlers"
 )
 
 func Router(svc echo.Service, registry *metrics.Registry) stdhttp.Handler {
