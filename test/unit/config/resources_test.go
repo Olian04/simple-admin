@@ -31,8 +31,10 @@ backends:
         paths:
           collection: '/api/collections/posts/records'
           item: '/api/collections/posts/records/{id}'
-        field_templates:
-          body: 'code'
+        field_hints:
+          rating: 'relation'
+          score: { widget: slider, min: 0, max: 5, step: 1 }
+          kind: { widget: select, options: [draft, { value: live, label: Live, tone: ok }] }
 `
 
 func TestManualBackendDefaultsAndParse(t *testing.T) {
@@ -60,8 +62,14 @@ func TestManualBackendDefaultsAndParse(t *testing.T) {
 	if r.Schema.Path != "./schemas/post.json" {
 		t.Fatalf("schema path wrong: %q", r.Schema.Path)
 	}
-	if ft := r.FieldTemplates["body"]; ft.Template != "code" {
-		t.Fatalf("shorthand field template wrong: %#v", ft)
+	if h := r.FieldHints["rating"]; h.Widget != "relation" {
+		t.Fatalf("shorthand field hint wrong: %#v", h)
+	}
+	if h := r.FieldHints["score"]; h.Widget != "slider" || h.Max != 5 || h.Step != 1 {
+		t.Fatalf("slider hint wrong: %#v", h)
+	}
+	if h := r.FieldHints["kind"]; len(h.Options) != 2 || h.Options[0].Value != "draft" || h.Options[1].Label != "Live" || h.Options[1].Tone != "ok" {
+		t.Fatalf("select hint wrong: %#v", h)
 	}
 }
 
@@ -211,5 +219,21 @@ backends:
 `))
 	if err == nil {
 		t.Fatal("expected error: paths.item must contain {id}")
+	}
+}
+
+func TestInvalidFieldHintIsRejected(t *testing.T) {
+	_, err := config.Load(writeConfig(t, `
+backends:
+  - base_url: 'http://h'
+    resources:
+      - name: 'posts'
+        schema: './s.json'
+        paths: { collection: '/posts', item: '/posts/{id}' }
+        field_hints:
+          body: 'code'
+`))
+	if err == nil {
+		t.Fatal("unknown widget should fail validation")
 	}
 }

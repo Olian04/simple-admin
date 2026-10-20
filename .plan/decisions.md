@@ -82,4 +82,13 @@ Append-only. Newest at bottom. Each entry: decision · rationale · date.
 
 32. **PocketBase installer popup disabled** in example-backend (`ServeEvent.InstallerFunc = nil`); superuser via CLI if the dashboard is needed. — No browser setup page on `serve`.
 
+## 2026-10-19 — Phase 3 (frontend swapped for webui)
+
+33. **UI layer replaced by webui (`github.com/Olian04/webui` v1.0.0-19, Go 1.27).** Templ/HTMX/Bulma/JS islands, `internal/views*`, HTTP handlers and `web/` deleted; new `internal/ui` declares pages from the registry. Domain/sources/backend/validation unchanged. — Zero frontend code; webui brings theme, CSRF/CSP, tables, forms, validation display.
+
+34. **Custom widgets dropped; replaced by declarative `field_hints`** (`relation|slider|select`) mapped onto built-in webui accessors. `field_templates`, `template_file`, jsonpath args, `FieldContext`, the `ui.monaco_cdn`/`easymde_cdn` keys and the `ojg` dependency are removed (config is strict, so old keys fail to load). — webui forbids app-written markup.
+
+35. **Credentials move from browser localStorage to server memory per session** (`ui.Sessions`, `sa_session` HttpOnly cookie). A 401 from a backend becomes a webui `Refusal` (Unauthorized, with a link to the Credentials page) in the panel that failed. — No JavaScript runs, so the old `X-Sa-Credential` header scheme cannot work.
+
+36. **UI is rebuilt, not mutated, when discovery changes the registry** (`ui.Live`, atomic handler swap; failed compile keeps the old UI; metrics counted into one registry). Delete is a toolbar `Action` with `Confirm` (native dialog). webui gaps found are listed in `docs/webui-gaps.md`.
 

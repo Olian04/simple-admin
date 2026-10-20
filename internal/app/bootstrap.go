@@ -12,6 +12,7 @@ import (
 	"github.com/Olian04/simple-admin/internal/observability/metrics"
 	httptransport "github.com/Olian04/simple-admin/internal/transport/http"
 	"github.com/Olian04/simple-admin/internal/transport/metricshttp"
+	"github.com/Olian04/simple-admin/internal/ui"
 )
 
 func Run(ctx context.Context, cfg config.Config, configDir string) error {
@@ -28,14 +29,22 @@ func Run(ctx context.Context, cfg config.Config, configDir string) error {
 	if err != nil {
 		return fmt.Errorf("build resources: %w", err)
 	}
-	startDiscoveryPoller(ctx, cfg, configDir, resources)
 
-	widgets, err := buildWidgets(cfg, configDir)
+	live, err := ui.NewLive(resources, ui.Options{
+		PageSize: cfg.UI.PageSize,
+		Logger:   slog.Default(),
+		Metrics:  registry.Registerer(),
+	})
 	if err != nil {
-		return fmt.Errorf("build widgets: %w", err)
+		return fmt.Errorf("build ui: %w", err)
 	}
+	startDiscoveryPoller(ctx, cfg, configDir, resources, func() {
+		if err := live.Rebuild(); err != nil {
+			slog.Warn("ui rebuild failed; keeping the previous ui", "error", err)
+		}
+	})
 
-	handler := httptransport.Router(registry, resources, widgets, cfg.UI)
+	handler := httptransport.Router(registry, live)
 
 	n := 1
 	metricsOn := cfg.MetricsEnabled()

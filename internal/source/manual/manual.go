@@ -51,7 +51,7 @@ func (s *Source) Descriptors(ctx context.Context) ([]resource.ResourceDescriptor
 			if err != nil {
 				return nil, fmt.Errorf("backend %q resource %q: %w", b.ID, r.Name, err)
 			}
-			applyFieldTemplates(fields, r.FieldTemplates)
+			applyFieldHints(fields, r.FieldHints)
 
 			out = append(out, resource.ResourceDescriptor{
 				Backend: backend,
@@ -107,30 +107,26 @@ func authScheme(a *config.AuthScheme) resource.AuthScheme {
 	return resource.AuthScheme{Type: a.Type, In: a.In, Name: a.Name}
 }
 
-func applyFieldTemplates(fields []resource.Field, templates map[string]config.FieldTemplate) {
-	if len(templates) == 0 {
+func applyFieldHints(fields []resource.Field, hints map[string]config.FieldHint) {
+	if len(hints) == 0 {
 		return
 	}
 	for i := range fields {
-		ft, ok := templates[fields[i].Name]
+		h, ok := hints[fields[i].Name]
 		if !ok {
 			continue
 		}
-		fields[i].Custom = &resource.FieldTemplate{
-			TemplateID:   ft.Template,
-			TemplateFile: ft.TemplateFile,
-			Args:         convertArgs(ft.Args),
+		hint := &resource.FieldHint{
+			Widget:     h.Widget,
+			Resource:   h.Resource,
+			LabelField: h.LabelField,
+			Min:        h.Min,
+			Max:        h.Max,
+			Step:       h.Step,
 		}
+		for _, o := range h.Options {
+			hint.Options = append(hint.Options, resource.HintOption{Value: o.Value, Label: o.Label, Tone: o.Tone})
+		}
+		fields[i].Hint = hint
 	}
-}
-
-func convertArgs(args map[string]config.TemplateArg) map[string]resource.TemplateArg {
-	if len(args) == 0 {
-		return nil
-	}
-	out := make(map[string]resource.TemplateArg, len(args))
-	for k, v := range args {
-		out[k] = resource.TemplateArg{Static: v.Static, JSONPath: v.JSONPath}
-	}
-	return out
 }

@@ -26,8 +26,9 @@ func WithConstLabels(m map[string]string) Option {
 }
 
 type Registry struct {
-	reg      *prometheus.Registry
-	requests prometheus.Counter
+	reg         *prometheus.Registry
+	requests    prometheus.Counter
+	constLabels prometheus.Labels
 }
 
 func NewRegistry(opts ...Option) (*Registry, error) {
@@ -54,11 +55,18 @@ func NewRegistry(opts ...Option) (*Registry, error) {
 		ConstLabels: prometheus.Labels(o.constLabels),
 	})
 	reg.MustRegister(req)
-	return &Registry{reg: reg, requests: req}, nil
+	return &Registry{reg: reg, requests: req, constLabels: prometheus.Labels(o.constLabels)}, nil
 }
 
 func (r *Registry) IncRequests() {
 	r.requests.Inc()
+}
+
+// Registerer is where the UI registers its own metrics. They carry the same
+// constant labels as the rest. Compiling the UI again counts into the same
+// metrics, so one registerer serves every rebuild.
+func (r *Registry) Registerer() prometheus.Registerer {
+	return prometheus.WrapRegistererWith(r.constLabels, r.reg)
 }
 
 func (r *Registry) Handler() http.Handler {

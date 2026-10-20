@@ -41,8 +41,8 @@ func TestManualSourceBuildsDescriptor(t *testing.T) {
 			Paths:      config.ResourcePaths{Collection: "/posts", Item: "/posts/{id}"},
 			IDField:    "id",
 			UpdateVerb: "PATCH",
-			FieldTemplates: map[string]config.FieldTemplate{
-				"body": {Template: "code"},
+			FieldHints: map[string]config.FieldHint{
+				"status": {Widget: "select", Options: []config.HintOption{{Value: "draft"}}},
 			},
 		}},
 	}}
@@ -65,7 +65,7 @@ func TestManualSourceBuildsDescriptor(t *testing.T) {
 		t.Fatalf("auth wrong: %+v", d.AuthScheme)
 	}
 
-	// Field order preserved; title required; body carries custom template.
+	// Field order preserved; title required; status carries a widget hint.
 	if len(d.Schema.Fields) != 5 {
 		t.Fatalf("want 5 fields, got %d", len(d.Schema.Fields))
 	}
@@ -84,8 +84,7 @@ func TestManualSourceBuildsDescriptor(t *testing.T) {
 	if status.Kind != "enum" || len(status.Enum) != 2 {
 		t.Fatalf("status enum wrong: %+v", status)
 	}
-	body := d.Schema.Fields[byName["body"]]
-	if body.Custom == nil || body.Custom.TemplateID != "code" {
-		t.Fatalf("body custom template wrong: %+v", body.Custom)
+	if status.Hint == nil || status.Hint.Widget != "select" || len(status.Hint.Options) != 1 {
+		t.Fatalf("status hint wrong: %+v", status.Hint)
 	}
 }
