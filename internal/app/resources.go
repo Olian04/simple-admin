@@ -10,7 +10,6 @@ import (
 	"github.com/Olian04/simple-admin/internal/schemavalidation"
 	"github.com/Olian04/simple-admin/internal/source/manual"
 	"github.com/Olian04/simple-admin/internal/source/openapi"
-	"github.com/Olian04/simple-admin/internal/views/form"
 )
 
 // buildRegistry runs the descriptor sources (manual + discovery) and returns a
@@ -58,23 +57,4 @@ func assembleRuntimes(ctx context.Context, cfg config.Config, configDir string) 
 		runtimes = append(runtimes, &resource.Runtime{Descriptor: d, Service: svc})
 	}
 	return runtimes, nil
-}
-
-// buildWidgets builds the field-widget registry: embedded built-ins plus any
-// user-supplied template_file widgets referenced in config (resolved against
-// configDir). Fails fast on parse errors.
-func buildWidgets(cfg config.Config, configDir string) (*form.WidgetRegistry, error) {
-	var userFiles []string
-	seen := map[string]bool{}
-	for _, b := range cfg.Backends {
-		for _, r := range b.Resources {
-			for _, ft := range r.FieldTemplates {
-				if ft.TemplateFile != "" && !seen[ft.TemplateFile] {
-					seen[ft.TemplateFile] = true
-					userFiles = append(userFiles, ft.TemplateFile)
-				}
-			}
-		}
-	}
-	return form.NewWidgetRegistry(configDir, userFiles)
 }

@@ -43,3 +43,18 @@ Phase 1 (MVP) complete (steps 0–13 done).
 | extra | Disable PocketBase installer popup | done | InstallerFunc=nil; no pbinstall URL on startup | 2026-06-14 |
 
 Current focus: **Phase 2 complete** (p2-0..p2-13 + extras done). Staying stubbed: low-value widgets (geo/richtext/file/image/multiselect/duration/rating/slug/currency/…) + bearer/basic/oauth auth. Deferred: docker-compose admin↔backend config wiring (deploy/admin-config.yaml). Known: govulncheck stdlib advisories (report-only; keep Go patched).
+
+## Phase 3 — webui frontend
+
+| Step | Title | Status | Notes | Date |
+| --- | --- | --- | --- | --- |
+| p3-1 | Go 1.27 + webui v1.0.0-19 | done | go.mod, Dockerfile, CI; templ tool removed | 2026-10-19 |
+| p3-2 | `internal/ui`: accessors + list/detail/new/edit/delete | done | verified against PocketBase example in browser | 2026-10-19 |
+| p3-3 | Sessions + credentials page | done | in-memory per session; 401-aware guard | 2026-10-19 |
+| p3-4 | `field_hints` config (replaces templates) | done | relation/slider/select; strict config | 2026-10-19 |
+| p3-5 | Discovery poller → `Live.Rebuild`; metrics scope | done | fresh scope per build; tested | 2026-10-19 |
+| p3-6 | Delete old UI, docs, CI | done | views/handlers/web removed; README/AGENTS/.plan updated | 2026-10-19 |
+| p3-7 | webui gap list | done | `docs/webui-gaps.md` (file as issues) | 2026-10-19 |
+
+Current focus: **Phase 3 complete.** Next: file the webui gaps as issues; consider relation typeahead + nullable numbers once webui supports them.
+

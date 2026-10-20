@@ -1,11 +1,10 @@
 # simple-admin UI server.
-FROM golang:1.26-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# Generate templ components, then build a static binary.
-RUN go tool templ generate
+# Build a static binary.
 RUN CGO_ENABLED=0 go build -trimpath \
     -ldflags "-s -w" \
     -o /out/simple-admin ./cmd/simple-admin

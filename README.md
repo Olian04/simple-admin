@@ -2,56 +2,45 @@
 
 > **Every backend ends up hand-rolling an admin panel.** simple-admin is one configurable, backend-agnostic admin that any compliant backend can plug into via an OpenAPI spec + CRUD endpoints, with zero frontend code per resource.
 
-A single Go binary that renders CRUD screens for resources hosted by *other* backends, generating the entire UI from the resources' JSON Schemas. Stack: [Templ](https://templ.guide) + [HTMX](https://htmx.org) + [Bulma](https://bulma.io), with small JS islands for rich widgets. No SPA, no Node toolchain.
+A single Go binary that renders CRUD screens for resources hosted by *other* backends, generating the entire UI from the resources' JSON Schemas. The UI is declared in Go with [webui](https://github.com/Olian04/webui) (server-rendered, works without JavaScript, light/dark theme, CSRF + CSP built in). No SPA, no Node toolchain, no HTML/CSS/JS in this repo.
 
 ## Architecture & data flow
 
 ```mermaid
 flowchart TB
-  subgraph Startup["Startup: config -> descriptors -> UI model"]
+  subgraph Startup["Startup: config -> descriptors -> UI"]
     CFG["config.yaml — backends[]"]
     CFG -->|manual mode| MAN["internal/source/manual<br/>load JSON Schema (path | url)"]
     CFG -->|discovery mode| DISC["internal/source/openapi<br/>fetch + parse OpenAPI spec"]
-    MAN --> DESC["[]ResourceDescriptor<br/>schema · CRUD paths · capabilities<br/>auth scheme · field templates"]
+    MAN --> DESC["[]ResourceDescriptor<br/>schema · CRUD paths · capabilities<br/>auth scheme · field hints"]
     DISC --> DESC
     DESC --> REG["domain/resource Registry<br/>grouped by backend · swappable"]
     REG --> VAL["compile JSON Schema validators"]
-    REG --> RND["ui/render<br/>schema -> columns + form inputs<br/>auto-select field widgets"]
-    REG --> SB["sidebar: resources grouped by backend"]
+    REG --> UIB["internal/ui<br/>schema -> webui accessors, tables, forms, pages"]
+    UIB --> APP["webui.App.Compile -> http.Handler<br/>(rebuilt + swapped when the registry changes)"]
   end
 
-  subgraph Browser["Browser"]
-    UI["Templ + Bulma pages · HTMX swaps"]
-    ISL["JS islands: datetime, relation, ..."]
-    CRED["credentials.js<br/>localStorage simple-admin:cred:&lt;backendId&gt;"]
-    UI --- ISL
-    UI --- CRED
-  end
+  Browser["Browser<br/>server-rendered pages · session cookie"]
+  Browser --> APP
 
-  RND --> UI
-  SB --> UI
-
-  subgraph Admin["Admin server — transport/http"]
-    H["UI handlers /ui/{backend}/{name}/..."]
-    MW["credentials middleware<br/>extract X-Sa-Credential"]
-    WVAL["validate body on POST/PUT/PATCH"]
+  subgraph Admin["Admin server"]
+    SES["session middleware<br/>per-visitor credentials, in memory"]
+    PG["list · detail · new · edit · delete pages"]
+    WVAL["validate body on create/update"]
     UP["upstream client + auth passthrough"]
-    H --> MW --> WVAL
+    SES --> PG --> WVAL
   end
+  APP --- SES
 
   subgraph Up["Upstream backend (e.g. PocketBase example)"]
     API["CRUD REST API + /openapi.json"]
   end
 
-  UI -->|"HTMX request + X-Sa-Credential (from localStorage)"| H
   VAL -. compiled schema .-> WVAL
-  WVAL -->|invalid| ERRP["422: re-render form with inline errors"]
-  ERRP --> UI
+  WVAL -->|invalid| REJ["422: form shown again, errors beside fields"]
+  REJ --> Browser
   WVAL -->|valid write / read / delete| UP
   UP -->|inject credential per auth scheme| API
-  API -->|JSON| UP
-  UP --> RESP["render list / detail / form partial"]
-  RESP --> UI
   DISC -. "discovery request (server-side creds)" .-> API
 ```
 
@@ -61,7 +50,7 @@ Bring up the admin UI + the reference PocketBase backend:
 
 ```sh
 docker compose -f deploy/docker-compose.yml up --build
-# admin UI:        http://localhost:8080/ui
+# admin UI:        http://localhost:8080/ui/
 # example backend: http://localhost:8090/openapi.json
 ```
 
@@ -81,7 +70,7 @@ make run   # APP_CONFIG_FILE=configs/config.example.yaml, or pass --config
 
 ```yaml
 backends:
-  - id: example                         # stable id -> sidebar group + browser cred key
+  - id: example                         # stable id -> sidebar group + URL segment
     base_url: http://localhost:8090
     auth: { type: apikey, in: header, name: X-API-Key }   # scheme only (no secret)
     resources:
@@ -89,9 +78,10 @@ backends:
         schema: ./schemas/post.json     # path OR { url: ... }
         paths: { collection: /api/collections/posts/records, item: /api/collections/posts/records/{id} }
         update_verb: PATCH
-        field_templates:
-          body: code                    # built-in widget id (shorthand)
-          rating: { template: rating, args: { max: { jsonpath: '$.maxRating' } } }
+        field_hints:                    # optional: pick a built-in input for a field
+          author: relation              # choose a record of another resource
+          rating: { widget: slider, min: 0, max: 5, step: 1 }
+          status: { widget: select, options: [draft, { value: live, label: Live, tone: ok }] }
   - id: gateway
     base_url: http://localhost:8090
     discovery:                          # resources + auth scheme derived from the spec
@@ -112,20 +102,33 @@ A backend works with simple-admin if it exposes:
 
 ## Auth
 
-The admin holds **no secrets**. Per-backend credentials live in the **browser's localStorage** (Credentials page in the sidebar), are injected into requests as `X-Sa-Credential`, and the server **passes them through** to the upstream backend per its auth scheme. `none` + `apikey` are implemented; `bearer`/`basic`/`oauth` are stubbed (config rejects them with a clear error). The auth scheme is declared in YAML for manual backends and derived from `securitySchemes` for discovery backends.
+The admin holds **no secrets**. Each visitor gives a backend's key on the **Credentials** page (shown when a backend uses `apikey`). It is typed into a password-style field, kept **in server memory for that browser session** (an opaque `HttpOnly` cookie, 24 h sliding), never written to disk, and passed through to the upstream backend per its auth scheme. `none` + `apikey` are implemented; `bearer`/`basic`/`oauth` are stubbed (config rejects them with a clear error). The auth scheme is declared in YAML for manual backends and derived from `securitySchemes` for discovery backends.
 
-## Field widgets
+webui does no authentication of its own: run simple-admin behind your own login (reverse proxy, SSO) if the UI itself must be private.
 
-Form fields render via descriptive, library-agnostic widgets (compiled Templ components). Built-ins auto-select by convention (`date-time` → `datetime`; a `{resource}`/`{resource}Id` field referencing another resource on the same backend → `relation` picker), and any field can be overridden in config. Widget args are static or resolved from the record via JSONPath.
+## Inputs
 
-Implemented: `datetime`, `relation`, `color`, `json`, `tags`, plus `code` (Monaco) and `markdown` (EasyMDE) which load from the configured `ui.*_cdn`. `geo`, `richtext`, `file`, etc. are registered stubs. Operators can also point a field at a custom `html/template` file.
+Each schema field becomes a webui accessor, used as a table column and as a form input:
 
-**Widget data contract:** every widget — built-in Templ or user `html/template` — receives the same `FieldContext`: the field's value + args, its full schema metadata (`Field`), and a queryable view of sibling fields (`Sibling`, `SiblingValue`, `BoolSiblings`, `IDSiblings`, `SiblingsOfKind`) so a widget can react to related fields (flags, foreign keys).
+| Schema | Input |
+| --- | --- |
+| `string` | text (`maxLength`, `required`, and a `pattern` webui can express, enforced in the page and again on the server); long text (`maxLength` > 200, or a name like `body`/`description`) is a text area |
+| `string` + `date` / `date-time` | date picker / date-time picker (UTC) |
+| `string` + `email` / `uri` / `color` | email, website and color inputs |
+| `integer` / `number` | number input (`minimum`, `maximum`); empty means unset and is left out of the request |
+| `boolean` | Yes / No / unset choice |
+| `enum` | drop-down |
+| `array` of scalars | comma separated text |
+| `array` / `object` | JSON in a text area |
+| a field named like another resource on the same backend (`author`, `author_id` → `authors`) | choice of that resource's records (first 200), shown by label |
+
+`field_hints` override the guess: `relation` (`resource`, `label_field`), `slider` (`min`, `max`, `step`) and `select` (`options`). The full JSON Schema is still the authority: a write it refuses is shown beside the field. Custom `html/template` widgets are gone with the old frontend (webui does not let an app write markup).
+
+Known limits, each tracked as a webui gap in [`docs/webui-gaps.md`](docs/webui-gaps.md): no syntax-highlighted editor inside a form, no tags input, no typeahead for big relation lists. A schema `description` is shown as the field's help. Lists cannot be filtered (the backend contract has no filtering), so the column filters are switched off.
 
 ## Development
 
 ```sh
-make generate   # templ -> *_templ.go (gitignored)
 make build      # static binary
 make lint       # vet, mod verify, govulncheck, golangci-lint
 make test       # unit tests (mirror internal/ under test/unit/)
@@ -138,16 +141,14 @@ See [`.plan/`](.plan/) for the implementation plan, decision log, and per-step p
 | Path | Role |
 | --- | --- |
 | `cmd/simple-admin` | Entry: config load, slog, signals, `app.Run`. |
-| `internal/app` | Composition root: build descriptor sources → registry → widgets → wire router. |
+| `internal/app` | Composition root: build descriptor sources → registry → UI → wire router; rebuild the UI when discovery refreshes. |
 | `internal/config` | YAML config (`backends:` manual/discovery), defaults, validation. |
 | `internal/domain/resource` | Canonical model (`ResourceDescriptor`), ports (`Store`/`Validator`/`DescriptorSource`), registry. Pure stdlib. |
 | `internal/source/{manual,openapi}` | Produce descriptors from config / OpenAPI specs. |
-| `internal/app/poller.go` | Background discovery poller (refreshes the registry on `poll_interval`). |
+| `internal/app/poller.go` | Background discovery poller (refreshes the registry on `poll_interval`, then rebuilds the UI). |
 | `internal/backend` | Outbound CRUD client + auth passthrough. |
 | `internal/schemavalidation` | JSON Schema validation → field-keyed errors. |
-| `internal/views` | Templ page components (layout/list/detail/delete/credentials) + display helpers. |
-| `internal/views/form` | Form rendering: form Templ, field model, widget registry, args, auto-select, widget components. |
-| `internal/transport/http` | Router (`GET /` → `/ui`), handlers, credentials middleware, CSP. |
-| `web/` | Embedded static assets (Bulma, HTMX, app.css, JS islands). |
+| `internal/ui` | The webui declaration built from the registry: accessors per field, list/detail/new/edit/delete pages, credentials page, session store, hot-swappable `Live` handler. |
+| `internal/transport/http` | Router: `/healthz`, `GET /` → `/ui/`, the UI under `/ui/`; request counting + logging. |
 | `example-backend/` | **Separate module**: PocketBase reference backend + generated OpenAPI. |
 | `deploy/` | docker-compose local stack. |

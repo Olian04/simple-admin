@@ -18,16 +18,14 @@ logging:
   format: 'json'
   stream: 'stdout'
 
-# UI rendering knobs. Widget asset CDNs can be overridden to self-host for airgap.
+# UI knobs.
 ui:
-  monaco_cdn: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'
-  easymde_cdn: 'https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist'
   page_size: 25
 
 # Backends the admin UI manages. Each backend is EITHER manual (resources listed
 # explicitly with their own JSON Schema) OR discovery (resources derived from an
 # OpenAPI spec). Upstream CRUD secrets are NOT here — they live in the browser,
-# keyed by backend id. Only discovery-request creds are server-side (env-expanded).
+# kept in memory per browser session (Credentials page). Only discovery-request creds are server-side (env-expanded).
 backends:
   # --- manual mode ---
   - id: 'example'                       # stable id -> sidebar group + localStorage cred key
@@ -47,16 +45,11 @@ backends:
           item: '/api/collections/posts/records/{id}'
         id_field: 'id'
         update_verb: 'PATCH'              # PocketBase uses PATCH for updates
-        field_templates:                # optional per-field widget overrides
-          body: 'code'                  # shorthand built-in id
-          status:
-            template: 'code'            # long form + args
-            args:
-              language: 'json'
-          rating:
-            template: 'rating'
-            args:
-              max: { jsonpath: '$.maxRating' }   # arg resolved from the record
+        field_hints:                    # optional per-field input hints (built-in webui inputs)
+          author: 'relation'            # pick a record of another resource (name inferred: authors)
+          # author: { widget: relation, resource: 'authors', label_field: 'name' }
+          # rating: { widget: slider, min: 0, max: 5, step: 1 }
+          # status: { widget: select, options: [draft, { value: live, label: Live, tone: ok }] }
 
   # --- discovery mode (polling built later; scheme derived from the spec) ---
   - id: 'gateway'

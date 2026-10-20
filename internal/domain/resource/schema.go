@@ -80,15 +80,16 @@ func orderedProperties(propsRaw json.RawMessage) ([]string, map[string]json.RawM
 }
 
 type propSchema struct {
-	Type      any             `json:"type"`
-	Format    string          `json:"format"`
-	Enum      []any           `json:"enum"`
-	Minimum   *float64        `json:"minimum"`
-	Maximum   *float64        `json:"maximum"`
-	MaxLength *int            `json:"maxLength"`
-	Pattern   string          `json:"pattern"`
-	ReadOnly  bool            `json:"readOnly"`
-	Items     json.RawMessage `json:"items"`
+	Type        any             `json:"type"`
+	Format      string          `json:"format"`
+	Enum        []any           `json:"enum"`
+	Minimum     *float64        `json:"minimum"`
+	Maximum     *float64        `json:"maximum"`
+	MaxLength   *int            `json:"maxLength"`
+	Pattern     string          `json:"pattern"`
+	ReadOnly    bool            `json:"readOnly"`
+	Description string          `json:"description"`
+	Items       json.RawMessage `json:"items"`
 }
 
 func fieldFromProp(name string, raw json.RawMessage, required bool) (Field, error) {
@@ -98,15 +99,16 @@ func fieldFromProp(name string, raw json.RawMessage, required bool) (Field, erro
 	}
 
 	f := Field{
-		Name:      name,
-		Label:     titleizeField(name),
-		Format:    ps.Format,
-		Required:  required,
-		ReadOnly:  ps.ReadOnly,
-		Min:       ps.Minimum,
-		Max:       ps.Maximum,
-		MaxLength: ps.MaxLength,
-		Pattern:   ps.Pattern,
+		Name:        name,
+		Label:       titleizeField(name),
+		Format:      ps.Format,
+		Required:    required,
+		ReadOnly:    ps.ReadOnly,
+		Min:         ps.Minimum,
+		Max:         ps.Maximum,
+		MaxLength:   ps.MaxLength,
+		Pattern:     ps.Pattern,
+		Description: ps.Description,
 	}
 
 	typ := firstType(ps.Type)

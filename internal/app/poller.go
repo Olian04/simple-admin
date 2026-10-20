@@ -10,9 +10,10 @@ import (
 )
 
 // startDiscoveryPoller periodically re-runs the descriptor sources and swaps the
-// registry, so discovery-backed resources stay in sync without a restart. It is
+// registry and calls onChange, so discovery-backed resources stay in sync without
+// a restart (the UI is rebuilt from the registry). It is
 // a no-op when no backend uses discovery. Stops on ctx cancellation.
-func startDiscoveryPoller(ctx context.Context, cfg config.Config, configDir string, reg *resource.Registry) {
+func startDiscoveryPoller(ctx context.Context, cfg config.Config, configDir string, reg *resource.Registry, onChange func()) {
 	interval := discoveryInterval(cfg)
 	if interval <= 0 {
 		return // no discovery backends → nothing to poll
@@ -31,6 +32,9 @@ func startDiscoveryPoller(ctx context.Context, cfg config.Config, configDir stri
 					continue
 				}
 				reg.Replace(runtimes)
+				if onChange != nil {
+					onChange()
+				}
 				slog.Info("discovery refreshed", "resources", len(runtimes))
 			}
 		}

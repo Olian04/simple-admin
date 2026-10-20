@@ -20,34 +20,45 @@ const (
 
 // Field is one property of a resource schema, kept in declared order.
 type Field struct {
-	Name      string
-	Label     string
-	Kind      FieldKind
-	Format    string // email|uri|date|date-time|password|color|...
-	Required  bool
-	ReadOnly  bool
-	Enum      []string
-	Min       *float64
-	Max       *float64
-	MaxLength *int
-	Pattern   string
-	Items     *Field         // element schema for arrays
-	Custom    *FieldTemplate // optional widget override (config-supplied)
+	Name        string
+	Label       string
+	Kind        FieldKind
+	Format      string // email|uri|date|date-time|password|color|...
+	Required    bool
+	ReadOnly    bool
+	Enum        []string
+	Min         *float64
+	Max         *float64
+	MaxLength   *int
+	Pattern     string
+	Description string     // JSON Schema description, shown as the field's help
+	Items       *Field     // element schema for arrays
+	Hint        *FieldHint // optional widget hint (config-supplied)
 }
 
-// FieldTemplate is a resolved widget binding for a field (built-in id or a
-// user-supplied template file) plus its configured args.
-type FieldTemplate struct {
-	TemplateID   string
-	TemplateFile string
-	Args         map[string]TemplateArg
+// Widget names a FieldHint may select.
+const (
+	WidgetRelation = "relation" // choose a record of another resource
+	WidgetSlider   = "slider"   // numeric range input
+	WidgetSelect   = "select"   // choice from a fixed list of options
+)
+
+// FieldHint is a declarative, config-supplied hint that picks which built-in
+// input a field uses. Only the keys relevant to the Widget are read.
+type FieldHint struct {
+	Widget     string
+	Resource   string  // relation: target resource on the same backend
+	LabelField string  // relation: field of the target shown as the option label
+	Min, Max   float64 // slider: bounds
+	Step       float64 // slider: step (0 = library default)
+	Options    []HintOption
 }
 
-// TemplateArg is a static value or a JSONPath selector resolved against the
-// record at render time.
-type TemplateArg struct {
-	Static   any
-	JSONPath string
+// HintOption is one choice of a select hint. Tone is ok|warn|bad or empty.
+type HintOption struct {
+	Value string
+	Label string
+	Tone  string
 }
 
 // Schema is the resource's JSON Schema: raw bytes for validation plus the

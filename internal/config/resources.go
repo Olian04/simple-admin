@@ -27,13 +27,13 @@ type BackendSection struct {
 
 // ResourceSection is a manually-declared resource (manual mode only).
 type ResourceSection struct {
-	Name           string                   `yaml:"name"`
-	Label          string                   `yaml:"label,omitempty"`
-	Schema         SchemaSource             `yaml:"schema"`
-	Paths          ResourcePaths            `yaml:"paths"`
-	IDField        string                   `yaml:"id_field,omitempty"`
-	UpdateVerb     string                   `yaml:"update_verb,omitempty"` // PUT|PATCH (default PUT)
-	FieldTemplates map[string]FieldTemplate `yaml:"field_templates,omitempty"`
+	Name       string               `yaml:"name"`
+	Label      string               `yaml:"label,omitempty"`
+	Schema     SchemaSource         `yaml:"schema"`
+	Paths      ResourcePaths        `yaml:"paths"`
+	IDField    string               `yaml:"id_field,omitempty"`
+	UpdateVerb string               `yaml:"update_verb,omitempty"` // PUT|PATCH (default PUT)
+	FieldHints map[string]FieldHint `yaml:"field_hints,omitempty"`
 }
 
 // ResourcePaths are the upstream CRUD paths (resolved against base_url).
@@ -54,8 +54,8 @@ type DiscoverySection struct {
 // (the server-side discovery-request credential); backend-level auth must not
 // carry a secret (those live in the browser).
 type AuthScheme struct {
-	Type  string `yaml:"type,omitempty"`  // none|apikey|bearer|basic|oauth
-	In    string `yaml:"in,omitempty"`    // header|query
+	Type  string `yaml:"type,omitempty"` // none|apikey|bearer|basic|oauth
+	In    string `yaml:"in,omitempty"`   // header|query
 	Name  string `yaml:"name,omitempty"`
 	Value string `yaml:"value,omitempty"` // discovery.auth only; env-expanded at load
 }
@@ -87,56 +87,75 @@ func (s *SchemaSource) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
-// FieldTemplate is a per-field widget override: a shorthand built-in id
-// (scalar), a `{ template: id, args: {...} }` mapping, or a
-// `{ template_file: path }` mapping for a user-supplied template.
-type FieldTemplate struct {
-	Template     string                 `yaml:"template,omitempty"`
-	TemplateFile string                 `yaml:"template_file,omitempty"`
-	Args         map[string]TemplateArg `yaml:"args,omitempty"`
+// FieldHint is a declarative per-field hint that selects a built-in input: a
+// bare widget name (`author: relation`) or a mapping with that widget's args.
+type FieldHint struct {
+	Widget     string       `yaml:"widget"`
+	Resource   string       `yaml:"resource,omitempty"`    // relation
+	LabelField string       `yaml:"label_field,omitempty"` // relation
+	Min        float64      `yaml:"min,omitempty"`         // slider
+	Max        float64      `yaml:"max,omitempty"`         // slider
+	Step       float64      `yaml:"step,omitempty"`        // slider
+	Options    []HintOption `yaml:"options,omitempty"`     // select
 }
 
-func (t *FieldTemplate) UnmarshalYAML(node *yaml.Node) error {
+func (h *FieldHint) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.ScalarNode:
-		t.Template = node.Value
+		h.Widget = node.Value
 		return nil
 	case yaml.MappingNode:
-		var aux struct {
-			Template     string                 `yaml:"template"`
-			TemplateFile string                 `yaml:"template_file"`
-			Args         map[string]TemplateArg `yaml:"args"`
-		}
-		if err := node.Decode(&aux); err != nil {
-			return err
-		}
-		t.Template = aux.Template
-		t.TemplateFile = aux.TemplateFile
-		t.Args = aux.Args
-		return nil
+		type plain FieldHint
+		return node.Decode((*plain)(h))
 	default:
-		return fmt.Errorf("field template must be an id or a mapping")
+		return fmt.Errorf("field hint must be a widget name or a mapping")
 	}
 }
 
-// TemplateArg is a static value or a `{ jsonpath: '$.x' }` selector resolved
-// against the record at render time.
-type TemplateArg struct {
-	Static   any
-	JSONPath string
+// HintOption is one choice of a select hint: a bare value or a mapping with a
+// label and tone (ok|warn|bad).
+type HintOption struct {
+	Value string `yaml:"value"`
+	Label string `yaml:"label,omitempty"`
+	Tone  string `yaml:"tone,omitempty"`
 }
 
-func (a *TemplateArg) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind == yaml.MappingNode {
-		var aux struct {
-			JSONPath string `yaml:"jsonpath"`
-		}
-		if err := node.Decode(&aux); err == nil && aux.JSONPath != "" {
-			a.JSONPath = aux.JSONPath
-			return nil
-		}
+func (o *HintOption) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.ScalarNode {
+		o.Value = node.Value
+		return nil
 	}
-	return node.Decode(&a.Static)
+	type plain HintOption
+	return node.Decode((*plain)(o))
+}
+
+// Validate checks a hint carries what its widget needs.
+func (h FieldHint) Validate() error {
+	switch h.Widget {
+	case "relation":
+		return nil // resource may be inferred from the field name
+	case "slider":
+		if h.Max <= h.Min {
+			return fmt.Errorf("slider needs max greater than min")
+		}
+	case "select":
+		if len(h.Options) == 0 {
+			return fmt.Errorf("select needs options")
+		}
+		for _, o := range h.Options {
+			if o.Value == "" {
+				return fmt.Errorf("select option values must not be empty")
+			}
+			switch o.Tone {
+			case "", "ok", "warn", "bad":
+			default:
+				return fmt.Errorf("select option tone %q must be ok, warn or bad", o.Tone)
+			}
+		}
+	default:
+		return fmt.Errorf("unknown widget %q (relation, slider, select)", h.Widget)
+	}
+	return nil
 }
 
 func (b BackendSection) isDiscovery() bool { return b.Discovery != nil }
@@ -236,9 +255,9 @@ func (r ResourceSection) Validate(backendID string) error {
 	if r.UpdateVerb != "PUT" && r.UpdateVerb != "PATCH" {
 		return fmt.Errorf("backend %q resource %q: update_verb must be PUT or PATCH", backendID, r.Name)
 	}
-	for field, ft := range r.FieldTemplates {
-		if ft.Template == "" && ft.TemplateFile == "" {
-			return fmt.Errorf("backend %q resource %q field %q: template or template_file required", backendID, r.Name, field)
+	for field, h := range r.FieldHints {
+		if err := h.Validate(); err != nil {
+			return fmt.Errorf("backend %q resource %q field %q: %w", backendID, r.Name, field, err)
 		}
 	}
 	return nil
